@@ -41,6 +41,16 @@
 	<description>
 		A library for making command line apps in Java. It provides a table component, progress monitoring, and escape sequences for formatting text such as colours, bold etc.
 	</description>
+	<distributionManagement>
+		<snapshotRepository>
+			<id>ossrh-sshtools</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
+		<repository>
+			<id>ossrh-sshtools</id>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+		</repository>
+	</distributionManagement>
 	<licenses>
 		<license>
 			<name>Apache License Version 2.0</name>
