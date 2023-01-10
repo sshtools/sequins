@@ -1,0 +1,2 @@
+com.sshtools.sequins.impl.FallbackTerminalFactory
+com.sshtools.sequins.impl.LinuxTerminalFactory
