@@ -129,6 +129,15 @@ public interface Terminal extends Prompter {
 		wrt.flush();
 		return this;
 	}
+	
+	default Terminal messageln(String message, Object... args) {
+		var seq = createSequence();
+		seq.msg(message, args);
+		var wrt = getWriter();
+		wrt.println(seq);
+		wrt.flush();
+		return this;
+	}
 
 	default ProgressBuilder progressBuilder(String title, Object... args) {
 		return progressBuilder().withMessage(title, args);
