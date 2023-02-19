@@ -120,6 +120,15 @@ public interface Terminal extends Prompter {
 	Sequence createSequence();
 
 	ProgressBuilder progressBuilder();
+	
+	default Terminal message(String message, Object... args) {
+		var seq = createSequence();
+		seq.msg(message, args);
+		var wrt = getWriter();
+		wrt.print(seq);
+		wrt.flush();
+		return this;
+	}
 
 	default ProgressBuilder progressBuilder(String title, Object... args) {
 		return progressBuilder().withMessage(title, args);
