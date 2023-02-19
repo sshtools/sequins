@@ -17,6 +17,8 @@ package com.sshtools.sequins.impl;
 
 import java.io.PrintWriter;
 
+import com.sshtools.sequins.Progress;
+import com.sshtools.sequins.ProgressBuilder;
 import com.sshtools.sequins.Sequence;
 import com.sshtools.sequins.Terminal;
 
@@ -39,6 +41,28 @@ public class FallbackTerminal implements Terminal {
 
 	@Override
 	public Sequence createSequence() {
-		return new Sequence();
+		return new Sequence() {
+
+			@Override
+			public Sequence newSeq() {
+				return createSequence();
+			}
+
+			@Override
+			public Sequence eraseLine() {
+				return cr().ch(getWidth(), ' ').cr();
+			}
+			
+		};
+	}
+
+	@Override
+	public ProgressBuilder progressBuilder() {
+		return new ProgressBuilder() {
+			@Override
+			public Progress build() {
+				return new DefaultConsoleProgress(FallbackTerminal.this, indeterminate, percentageText, message, args);
+			}
+		};
 	}
 }

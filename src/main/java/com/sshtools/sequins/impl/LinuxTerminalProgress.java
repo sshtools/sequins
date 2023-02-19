@@ -15,23 +15,19 @@
  */
 package com.sshtools.sequins.impl;
 
-import com.sshtools.sequins.DefaultConsoleProgress;
+import com.sshtools.sequins.Sequence;
 import com.sshtools.sequins.Sequence.Color;
 
 public class LinuxTerminalProgress extends DefaultConsoleProgress {
 
-	private final LinuxTerminal terminal;
-
-	public LinuxTerminalProgress(LinuxTerminal terminal, String name, Object... args) {
-		super(name, args);
-		this.terminal = terminal;
+	LinuxTerminalProgress(boolean spinner, boolean percentageText, LinuxTerminal terminal, String name, Object... args) {
+		super(terminal, spinner, percentageText, name, args);
 		super.postConstruct();
 	}
 
 
-	protected LinuxTerminalProgress(LinuxTerminal terminal, Object lock, int indent, String name, Object... args) {
-		super(lock, indent, name, args);
-		this.terminal = terminal;
+	protected LinuxTerminalProgress(boolean spinner, boolean percentageText, LinuxTerminal terminal, Object lock, int indent, String name, Object... args) {
+		super(terminal, spinner, percentageText, lock, indent, name, args);
 		super.postConstruct();
 	}
 
@@ -43,11 +39,11 @@ public class LinuxTerminalProgress extends DefaultConsoleProgress {
 
 	@Override
 	protected DefaultConsoleProgress createNewJob(Object lock, String name, Object... args) {
-		return new LinuxTerminalProgress(terminal, lock, indent() + 1, name, args);
+		return new LinuxTerminalProgress(indeterminate, percentageText, (LinuxTerminal) terminal, lock, indent() + 1, name, args);
 	}
 
 	@Override
-	protected void printIndent() {
+	protected void printIndent(Sequence seq) {
 		var wrt = terminal.getWriter();
 		if (indent() > 1)
 			wrt.print("○ ");
@@ -56,23 +52,8 @@ public class LinuxTerminalProgress extends DefaultConsoleProgress {
 		wrt.flush();
 	}
 
-
 	@Override
-	protected void printName() {
-		var seq = terminal.createSequence();
-		if(indent() == 0)
-			seq.fg(Color.YELLOW);
-		seq.msg(name().pattern(), name().args());
-		if(indent() == 0)
-			seq.defaultFg();
-		var wrt = terminal.getWriter();
-		wrt.print(seq);
-		wrt.flush();
-	}
-
-	@Override
-	protected void printMessage() {
-		var seq = terminal.createSequence();
+	protected void printMessage(Sequence seq, int availableWidth) {
 		switch(message().level().orElse(Level.NORMAL)) {
 		case ERROR:
 			seq.fg(Color.RED);
@@ -106,9 +87,6 @@ public class LinuxTerminalProgress extends DefaultConsoleProgress {
 		default:
 			break;
 		}
-		var wrt = terminal.getWriter();
-		wrt.print(seq);
-		wrt.flush();
 	}
 
 }

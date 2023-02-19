@@ -22,6 +22,7 @@ import java.lang.ProcessBuilder.Redirect;
 import java.util.StringTokenizer;
 
 import com.sshtools.sequins.Progress;
+import com.sshtools.sequins.ProgressBuilder;
 import com.sshtools.sequins.Sequence;
 import com.sshtools.sequins.Terminal;
 
@@ -39,8 +40,13 @@ public class LinuxTerminal implements Terminal {
 	}
 
 	@Override
-	public Progress createProgress(String title, Object... args) {
-		return new LinuxTerminalProgress(this, title, args);
+	public ProgressBuilder progressBuilder() {
+		return new ProgressBuilder() {
+			@Override
+			public Progress build() {
+				return new LinuxTerminalProgress(indeterminate, percentageText, LinuxTerminal.this, message, args);
+			}
+		};
 	}
 
 	@Override
@@ -189,6 +195,11 @@ public class LinuxTerminal implements Terminal {
 			@Override
 			public Sequence defaultBg() {
 				return noTextAdvance(() -> csi().num(49).ch('m'));
+			}
+
+			@Override
+			public Sequence eraseLine() {
+				return csi().num(2).ch('K');
 			}
 		};
 	}

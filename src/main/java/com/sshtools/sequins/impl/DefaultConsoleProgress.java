@@ -13,11 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.sshtools.sequins;
+package com.sshtools.sequins.impl;
 
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+
+import com.sshtools.sequins.Progress;
+import com.sshtools.sequins.Sequence;
+import com.sshtools.sequins.Terminal;
 
 public class DefaultConsoleProgress implements Progress {
 
@@ -87,20 +93,32 @@ public class DefaultConsoleProgress implements Progress {
 	private StringBuilder indentStr = new StringBuilder();
 	private Object lock;
 	private Formattable message;
-	private Formattable name;
 	private boolean newlineNeeded;
 	private Optional<Integer> percent = Optional.empty();
 	private Spinner spinner;
 	private int[] spinnerChars = SPINNER_CHARS;
+	private boolean cancelled;
+	private List<Progress> jobs = new ArrayList<>();
+	
+	protected final Terminal terminal;	
+	protected final boolean indeterminate;
+	protected final boolean percentageText;
 
-	public DefaultConsoleProgress(String name, Object... args) {
-		this(new Object(), 0, name, args);
+	DefaultConsoleProgress(Terminal terminal, boolean showSpinner, boolean percentageText, String name, Object... args) {
+		this(terminal, showSpinner, percentageText, new Object(), 0, name, args);
 	}
 	
-	public Formattable name() {
-		return name;
+	@Override
+	public void cancel() {
+		cancelled = true;
+		Progress.super.cancel();
 	}
-	
+
+	@Override
+	public boolean isCancelled() {
+		return cancelled;
+	}
+
 	public Formattable message() {
 		return message;
 	}
@@ -117,9 +135,12 @@ public class DefaultConsoleProgress implements Progress {
 		this.spinnerChars = spinnerChars.codePoints().toArray();
 	}
 
-	protected DefaultConsoleProgress(Object lock, int indent, String name, Object... args) {
+	protected DefaultConsoleProgress(Terminal terminal, boolean showSpinner, boolean percentageText, Object lock, int indent, String name, Object... args) {
+		this.terminal = terminal;
 		this.lock = lock;
-		this.name = new Formattable(name, args);
+		this.indeterminate = showSpinner;
+		this.percentageText = percentageText;
+		this.message = name == null ? null :  new Formattable(name, args);
 		this.indent = indent;
 		for (int i = 0; i < indent; i++)
 			indentStr.append("   ");
@@ -127,7 +148,7 @@ public class DefaultConsoleProgress implements Progress {
 	}
 	
 	protected void postConstruct() {
-		if (name != null) {
+		if (message != null) {
 			printJob();
 		}
 		startSpinner();
@@ -164,78 +185,94 @@ public class DefaultConsoleProgress implements Progress {
 	@Override
 	public final Progress newJob(String name, Object... args) {
 		stopSpinner();
-		clear();
 		if (newlineNeeded)
 			printNewline();
-		return createNewJob(lock, name, args);
+		var j = createNewJob(lock, name, args);
+		jobs.add(j);
+		return j;
 	}
 
 	@Override
-	public final void progressed(Optional<Integer> percent) {
+	public final void progressed(Optional<String> message, Optional<Integer> percent, Object... args) {
 		synchronized (lock) {
 			if (percent.isPresent()) {
 				stopSpinner(); // Now have actual progress
 			}
 			this.percent = percent;
+			if(message.isPresent()) {
+				this.message = new Formattable(this.message == null ? Optional.of(Level.NORMAL) : this.message.level, message.get(), args);
+			}
 			printJob();
 		}
 	}
 
-	protected void printName() {
-		System.out.print(name);
-	}
-
-	protected void printSpinner() {
-		if (spinner != null) {
-			System.out.print(": " + Character.toString(spinnerChars[spinner.index]));
-		} else if (percent.isPresent()) {
-			System.out.print(": " + percent.get() + "%");
-		} else {
-			System.out.print("        ");
+	protected void printSpinner(Sequence seq) {
+		if(indeterminate) {
+			if(spinner == null) {
+				if(percentageText) {
+					seq.fmt("%3d%%", percent.get());
+				}
+			}
+			else {
+				if(percentageText) {
+					seq.msg("{0} {1}", Character.toString(spinnerChars[spinner.index]), String.format("%3d%%", percent.get()));
+				}
+				else {
+					seq.msg(" {0}", Character.toString(spinnerChars[spinner.index]));
+				}
+			}
+		}
+		else {
+			if(percentageText) {
+				seq.fmt("%3d%%", percent.get());
+			}
 		}
 	}
 
-	protected void printIndent() {
+	protected void printIndent(Sequence seq) {
 		if (indent > 1)
-			System.out.print("o ");
+			seq.str("o ");
 		else
-			System.out.print("* ");
+			seq.str("* ");
 	}
 
-	protected void printMessage() {
-		System.out.print(message);
+	protected void printMessage(Sequence seq, int availableWidth) {
+		seq.str(message);
 	}
 
 	protected DefaultConsoleProgress createNewJob(Object lock, String name,  Object... args) {
-		return new DefaultConsoleProgress(lock, indent + 1, name, args);
-	}
-
-	void clear() {
-		name = null;
+		return new DefaultConsoleProgress(terminal, indeterminate, percentageText, lock, indent + 1, name, args);
 	}
 
 	void printJob() {
 		synchronized (lock) {
 			newlineNeeded = true;
-			System.out.print(indentStr);
+			var width = terminal.getWidth();
+			var seq = terminal.createSequence();
+			seq.str(indentStr);
 			if (indent > 0) {
-				printIndent();
+				printIndent(seq);
 			}
-			if (message == null) {
-				if (name != null) {
-					printName();
-					printSpinner();
-					System.out.print("\r");
-				}
-			} else {
-				printMessage();
+			var indentLen = seq.textLength();
+			var spinnerSeq = terminal.createSequence();
+			printSpinner(spinnerSeq);
+			var len = spinnerSeq.textLength();
+			if (message != null) {
+				printMessage(seq, width - len - indentLen + (len > 0 ? 1 : 0));
 			}
+			if(len > 0)
+				seq.ch(' ');
+			seq.seq(spinnerSeq);
+			seq.cr();
+			var wrt = terminal.getWriter();
+			wrt.print(seq);
+			wrt.flush();
 		}
 	}
 
 	void printNewline() {
+		terminal.getWriter().println();
 		stopSpinner();
-		System.out.println();
 		newlineNeeded = false;
 	}
 
@@ -272,6 +309,11 @@ public class DefaultConsoleProgress implements Progress {
 			str = str.concat(String.valueOf(fillWith));
 		}
 		return str;
+	}
+
+	@Override
+	public List<Progress> jobs() {
+		return jobs;
 	}
 
 }

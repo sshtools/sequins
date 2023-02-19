@@ -22,9 +22,21 @@ import java.text.MessageFormat;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
-public class Sequence {
+public abstract class Sequence {
 	
-	final static Sequence EMPTY = new Sequence(true);
+	final static Sequence EMPTY = new Sequence(true) {
+
+		@Override
+		public Sequence newSeq() {
+			return null;
+		}
+
+		@Override
+		public final Sequence eraseLine() {
+			throw new UnsupportedOperationException();
+		}
+		
+	};
 	
 	public enum Color {
 		BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, BRIGHT_BLACK, BRIGHT_RED,
@@ -125,9 +137,7 @@ public class Sequence {
 		return textLength;
 	}
 
-	public Sequence newSeq() {
-		return new Sequence();
-	}
+	public abstract Sequence newSeq();
 
 	public final Sequence seq(Sequence seq) {
 		if(textAdvance) {
@@ -274,6 +284,8 @@ public class Sequence {
 	public final Sequence st() {
 		return noTextAdvance(() -> ch(ESC).ch('\\'));
 	}
+
+	public abstract Sequence eraseLine();
 
 	public final  Sequence cr() {
 		return cr(1);

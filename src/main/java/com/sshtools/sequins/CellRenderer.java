@@ -33,7 +33,7 @@ public interface CellRenderer<T> {
 
 		@Override
 		public Sequence render(Cell<? extends Object> cell, int maxWidth) {
-			return terminal.createSequence().maxTextLength(maxWidth).str(cell == null ? "<NULL>" : cell.value().toString());
+			return terminal.createSequence().maxTextLength(maxWidth).str(cell.value() == null ? "<NULL>" : cell.value().toString());
 		}
 		
 	}

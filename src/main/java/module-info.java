@@ -23,5 +23,6 @@ module com.sshtools.sequins {
 	opens com.sshtools.sequins;
 	uses TerminalFactory;
 	provides TerminalFactory with LinuxTerminalFactory, FallbackTerminalFactory;
+	requires java.xml;
 
 }

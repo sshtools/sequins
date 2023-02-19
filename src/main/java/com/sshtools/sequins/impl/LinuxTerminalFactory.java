@@ -41,7 +41,7 @@ public class LinuxTerminalFactory implements TerminalFactory {
 
 	@Override
 	public int getWeight() {
-		return Integer.MAX_VALUE;
+		return 0;
 	}
 
 }

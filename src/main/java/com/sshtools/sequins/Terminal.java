@@ -23,13 +23,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ServiceLoader;
 
-public interface Terminal {
+public interface Terminal extends Prompter {
 	
 	static Terminal create() {
 		var l = new ArrayList<TerminalFactory>();
 		for(var srv : ServiceLoader.load(TerminalFactory.class)) {
-			if(srv.isAvailable())
+			if(srv.isAvailable()) {
 				l.add(srv);
+			}
 		}
 		Collections.sort(l, (a, b) -> Integer.valueOf(a.getWeight()).compareTo(b.getWeight()));
 		if(l.isEmpty())
@@ -48,17 +49,14 @@ public interface Terminal {
 	default boolean yesNo(String fmt, Object... args) {
 		return isYes(prompt(
 						createSequence().fmt(fmt, args).str(" [").boldOn().ch('Y').boldOff().str("]es,[N]o: ").toString()), true);
-
 	}
 	default boolean noYes() {
 		return isYes(prompt(createSequence().str("[Y]es,[").boldOn().ch('N').boldOff().str("]o: ").toString()), false);
-
 	}
 
 	default boolean noYes(String fmt, Object... args) {
 		return isYes(prompt(
 						createSequence().fmt(fmt, args).str(" [Y]es,[").boldOn().ch('N').boldOff().str("]o: ").toString()), false);
-
 	}
 
 	default String prompt() {
@@ -77,13 +75,15 @@ public interface Terminal {
 		var console = System.console();
 		if (console == null) {
 			try {
-				getWriter().print(createSequence().fmt(fmt, args).toString());
+				var writer = getWriter();
+				writer.print(createSequence().msg(fmt, args).toString());
+				writer.flush();
 				return new BufferedReader(new InputStreamReader(System.in)).readLine();
 			} catch (IOException e) {
 				return null;
 			}
 		}
-		return console.readLine(createSequence().fmt(fmt, args).toString(), args);
+		return console.readLine(createSequence().msg(fmt, args).toString(), args);
 	}
 
 	default char[] password() {
@@ -102,13 +102,15 @@ public interface Terminal {
 		var console = System.console();
 		if (console == null) {
 			try {
-				getWriter().print(createSequence().fmt(fmt, args).toString());
+				var writer = getWriter();
+				writer.print(createSequence().msg(fmt, args).toString());
+				writer.flush();
 				return new BufferedReader(new InputStreamReader(System.in)).readLine().toCharArray();
 			} catch (IOException e) {
 				return null;
 			}
 		}
-		return console.readPassword(createSequence().fmt(fmt, args).toString());
+		return console.readPassword(createSequence().msg(fmt, args).toString());
 	}
 
 	PrintWriter getWriter();
@@ -117,8 +119,10 @@ public interface Terminal {
 
 	Sequence createSequence();
 
-	default Progress createProgress(String title, Object... args) {
-		return new DefaultConsoleProgress(title, args);
+	ProgressBuilder progressBuilder();
+
+	default ProgressBuilder progressBuilder(String title, Object... args) {
+		return progressBuilder().withMessage(title, args);
 	}
 
 }

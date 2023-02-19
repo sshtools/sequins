@@ -15,39 +15,105 @@
  */
 package com.sshtools.sequins;
 
+
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public interface Progress extends Closeable {
 	
-	public enum Level {
-		INFO, WARNING, ERROR, VERBOSE, NORMAL
+	public static void checkCancel(Progress p) {
+		if(p.isCancelled())
+			throw new CancelledException();
 	}
+	
+	@SuppressWarnings("serial")
+	class CancelledException extends RuntimeException{
+	}
+	
+	public enum Level {
+		INFO, WARNING, ERROR, VERBOSE, NORMAL, TRACE
+	}
+	
+	default void cancel() {
+		for(var j : jobs()) {
+			j.cancel();
+		}
+	}
+	
+	boolean isCancelled();
+	
+	List<Progress> jobs();
 
 	Progress newJob(String name, Object... args);
 
-	void progressed(Optional<Integer> percent);
+	default void progressed(int percent) {
+		progressed(Optional.empty(), Optional.of(percent));
+	}
+
+	default void progressed(String message, Object... args) {
+		progressed(Optional.of(message), Optional.empty(), args);
+	}
+
+	void progressed(Optional<String> message, Optional<Integer> percent, Object... args);
+	
+	default void error(String message, Object... args) {
+		error(message, null, args);
+	}
+	
+	default void error(String message, Throwable exception, Object... args) {
+		message(Level.ERROR, message, args);
+		if(exception != null) {
+			var s = new StringWriter();
+			exception.printStackTrace(new PrintWriter(s));
+			message(Level.TRACE, s.toString());
+		}
+	}
 	
 	void message(Level level, String message, Object... args);
 	
 	static Progress sink() {
 		return new Progress() {
+			private boolean cancelled;
+			private List<Progress> jobs = new ArrayList<>();
+
 			@Override
 			public void close() throws IOException {
 			}
 			
 			@Override
-			public void progressed(Optional<Integer> percent) {
+			public void progressed(Optional<String> message, Optional<Integer> percent, Object... args) {
 			}
 			
 			@Override
 			public Progress newJob(String name, Object... args) {
-				return sink();
+				var j = sink();
+				jobs.add(j);
+				return j;
 			}
 
 			@Override
 			public void message(Level level, String message, Object... args) {
+			}
+
+			@Override
+			public void cancel() {
+				cancelled = true;
+				Progress.super.cancel();
+			}
+
+			@Override
+			public boolean isCancelled() {
+				return cancelled;
+			}
+
+			@Override
+			public List<Progress> jobs() {
+				return jobs;
 			}
 		};
 	}
