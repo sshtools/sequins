@@ -23,15 +23,22 @@ import com.sshtools.sequins.Sequence;
 import com.sshtools.sequins.Terminal;
 
 public class FallbackTerminal implements Terminal {
-	private PrintWriter writer;
+	private final PrintWriter writer;
+	private final PrintWriter errWriter;
 
 	public FallbackTerminal() {
 		writer = new PrintWriter(System.out, true);
+		errWriter = new PrintWriter(System.err, true);
 	}
 
 	@Override
 	public PrintWriter getWriter() {
 		return writer;
+	}
+
+	@Override
+	public PrintWriter getErrorWriter() {
+		return errWriter;
 	}
 
 	@Override
@@ -60,7 +67,7 @@ public class FallbackTerminal implements Terminal {
 	public ProgressBuilder progressBuilder() {
 		return new ProgressBuilder() {
 			@Override
-			public Progress build() {
+			protected Progress buildImpl() {
 				return new DefaultConsoleProgress(FallbackTerminal.this, indeterminate, percentageText, message, args);
 			}
 		};

@@ -162,8 +162,9 @@ public class DefaultConsoleProgress implements Progress {
 	public final void close() throws IOException {
 		synchronized (lock) {
 			stopSpinner();
+			var wasNlNeeded = newlineNeeded;
 			printJob();
-			if (newlineNeeded)
+			if (wasNlNeeded)
 				printNewline();
 		}
 	}

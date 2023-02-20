@@ -115,6 +115,8 @@ public interface Terminal extends Prompter {
 
 	PrintWriter getWriter();
 
+	PrintWriter getErrorWriter();
+
 	int getWidth();
 
 	Sequence createSequence();
@@ -136,6 +138,45 @@ public interface Terminal extends Prompter {
 		var wrt = getWriter();
 		wrt.println(seq);
 		wrt.flush();
+		return this;
+	}
+
+	default Terminal error(Throwable exception) {
+		return error(null, exception);
+	}
+
+	default Terminal error(String message, Throwable exception, Object... args) {
+		return error(false, message, exception, args);
+	}
+	
+	default Terminal error(boolean showTrace, String message, Throwable exception, Object... args) {
+		if(message != null) {
+			error(message, args);
+		}
+		if(exception != null) {
+			var seq = createSequence();
+			seq.exception(exception, showTrace);
+			var wrt = getErrorWriter();
+			wrt.print(seq.toString());
+			wrt.flush();
+		}
+		return this;
+	}
+	
+	default Terminal error(String message, Object... args) {
+		var seq = createSequence();
+		seq.msg(message, args);
+		var wrt = getErrorWriter();
+		wrt.print(seq);
+		wrt.flush();
+		return this;
+	}
+	
+	default Terminal errorln(String message, Object... args) {
+		var seq = createSequence();
+		seq.msg(message, args);
+		var wrt = getErrorWriter();
+		wrt.println(seq);
 		return this;
 	}
 

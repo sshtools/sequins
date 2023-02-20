@@ -457,12 +457,17 @@ public abstract class Sequence {
 	}
 
 	public final Sequence msg(int repeat, String pattern, Object... args) {
-		if(textAdvance)
-			textLength += MessageFormat.format(pattern, args).length();
-		pattern = pattern.replace("{", newSeq().boldOn().toString() + "{");
-		pattern = pattern.replace("}", "}" + newSeq().boldOff().toString());
-		var fPattern = pattern;
-		noTextAdvance(() -> str(repeat, MessageFormat.format(fPattern, args)));
+		if(args.length > 0) {
+			if(textAdvance)
+				textLength += MessageFormat.format(pattern, args).length();
+			pattern = pattern.replace("{", newSeq().boldOn().toString() + "{");
+			pattern = pattern.replace("}", "}" + newSeq().boldOff().toString());
+			var fPattern = pattern;
+			noTextAdvance(() -> str(repeat, MessageFormat.format(fPattern, args)));
+		}
+		else {
+			str(repeat, pattern);
+		}
 		return this;
 	}
 
@@ -471,15 +476,75 @@ public abstract class Sequence {
 	}
 
 	public final Sequence fmt(int repeat, String pattern, Object... args) {
-		if(textAdvance)
-			textLength += String.format(pattern, args).length();
-		var p = Pattern.compile("(\\%[0-9\\-\\.]*[a-z]+)");
-		var m = p.matcher(pattern);
-		if(m.find()) {
-			pattern = m.replaceAll((r) -> newSeq().boldOn().str(r.group(0)).boldOff().toString());
+		if(args.length > 0) {
+			if(textAdvance)
+				textLength += String.format(pattern, args).length();
+			var p = Pattern.compile("(\\%[0-9\\-\\.]*[a-z]+)");
+			var m = p.matcher(pattern);
+			if(m.find()) {
+				pattern = m.replaceAll((r) -> newSeq().boldOn().str(r.group(0)).boldOff().toString());
+			}
+			var fPattern = pattern;
+			noTextAdvance(() -> str(repeat, String.format(fPattern, args)));
 		}
-		var fPattern = pattern;
-		noTextAdvance(() -> str(repeat, String.format(fPattern, args)));
+		else {
+			str(repeat, pattern);
+		}
+		return this;
+	}
+	
+	public Sequence exception(Throwable ex) {
+		return exception(ex, true);
+	}
+	
+	public Sequence exception(Throwable ex, boolean printTrace) {
+
+		fg(Color.RED);
+		str(ex.getMessage() == null ? "An unknown error occured." : ex.getMessage());
+		defaultFg();
+		nl();
+		if(printTrace) {
+			Throwable nex = ex;
+			int indent = 0;
+			while(nex != null) {
+				if(indent > 0) {
+					ch(8 + ((indent - 1 )* 2), ' ');
+					fg(Color.RED);
+					str(nex.getMessage() == null ? "No message." : nex.getMessage());
+					defaultFg();
+					nl();
+				}
+				
+				for(var el : nex.getStackTrace()) {
+					ch(8 + (indent * 2), ' ');
+					str("at ");
+					if(el.getModuleName() != null) {
+						str(el.getModuleName());
+						ch('/');
+					}
+					fg(Color.YELLOW);
+					str(el.getClassName());
+					ch('.');
+					str(el.getMethodName());
+					defaultFg();
+					if(el.getFileName() != null) {
+						ch('(');
+						str(el.getFileName());
+						if(el.getLineNumber() > -1) {
+							ch(':');
+							fg(Color.YELLOW);
+							num(el.getLineNumber());
+							defaultFg();
+							ch(')');
+						}
+					}
+					nl();
+				}
+				indent++;
+				nex = nex.getCause();
+			}
+		}
+		
 		return this;
 	}
 

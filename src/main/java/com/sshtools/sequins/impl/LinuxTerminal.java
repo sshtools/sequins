@@ -17,33 +17,20 @@ package com.sshtools.sequins.impl;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.StringTokenizer;
 
 import com.sshtools.sequins.Progress;
 import com.sshtools.sequins.ProgressBuilder;
 import com.sshtools.sequins.Sequence;
-import com.sshtools.sequins.Terminal;
 
-public class LinuxTerminal implements Terminal {
-
-	private PrintWriter writer;
-
-	public LinuxTerminal() {
-		writer = new PrintWriter(System.out, true);
-	}
-
-	@Override
-	public PrintWriter getWriter() {
-		return writer;
-	}
+public class LinuxTerminal extends FallbackTerminal {
 
 	@Override
 	public ProgressBuilder progressBuilder() {
 		return new ProgressBuilder() {
 			@Override
-			public Progress build() {
+			protected Progress buildImpl() {
 				return new LinuxTerminalProgress(indeterminate, percentageText, LinuxTerminal.this, message, args);
 			}
 		};
