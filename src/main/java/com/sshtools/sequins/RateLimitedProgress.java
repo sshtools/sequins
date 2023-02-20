@@ -73,9 +73,15 @@ public class RateLimitedProgress implements Progress {
 		}
 		if (task == null || task.isDone()) {
 			task = executor.schedule(() -> {
+				Optional<String> fmsg;
+				Optional<Integer> fpc;
+				Object[] fargs;
 				synchronized (lock) {
-					delegate.progressed(RateLimitedProgress.this.message, RateLimitedProgress.this.percent, RateLimitedProgress.this.args);
+					fmsg = RateLimitedProgress.this.message;
+					fpc = RateLimitedProgress.this.percent;
+					fargs = RateLimitedProgress.this.args;
 				}
+				delegate.progressed(fmsg, fpc, fargs);
 			}, ms, TimeUnit.MILLISECONDS);
 		}
 

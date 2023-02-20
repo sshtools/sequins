@@ -26,6 +26,11 @@ import com.sshtools.sequins.Sequence;
 
 public class LinuxTerminal extends FallbackTerminal {
 
+	private static final long WIDTH_REFRESH_TIME = 1000;
+
+	private long lastWidth = -1;
+	private int width = 80;
+
 	@Override
 	public ProgressBuilder progressBuilder() {
 		return new ProgressBuilder() {
@@ -38,34 +43,37 @@ public class LinuxTerminal extends FallbackTerminal {
 
 	@Override
 	public int getWidth() {
-		try {
-			/* This is the only method that works with sudo */
-			var p = new ProcessBuilder("tput", "cols").redirectError(Redirect.INHERIT).redirectInput(Redirect.INHERIT)
-					.start();
-			try (var in = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
-				return Integer.parseInt(in.readLine());
-			}
-		} catch (Exception e3) {
+		if (lastWidth < System.currentTimeMillis() - WIDTH_REFRESH_TIME) {
+			lastWidth = System.currentTimeMillis();
 			try {
-				return Integer.parseInt(System.getenv("COLUMNS"));
-			} catch (Exception e) {
+				width = Integer.parseInt(System.getenv("COLUMNS"));
+			} catch (Exception e3) {
 				try {
-					var p = new ProcessBuilder("stty", "-a").redirectError(Redirect.INHERIT)
+					/* This is the only method that works with sudo */
+					var p = new ProcessBuilder("tput", "cols").redirectError(Redirect.INHERIT)
 							.redirectInput(Redirect.INHERIT).start();
 					try (var in = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
-						var st = new StringTokenizer(in.readLine());
-						while (st.hasMoreTokens()) {
-							var tkn = st.nextToken();
-							if (tkn.equals("columns")) {
-								return Integer.parseInt(st.nextToken());
+						width = Integer.parseInt(in.readLine());
+					}
+				} catch (Exception e) {
+					try {
+						var p = new ProcessBuilder("stty", "-a").redirectError(Redirect.INHERIT)
+								.redirectInput(Redirect.INHERIT).start();
+						try (var in = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+							var st = new StringTokenizer(in.readLine());
+							while (st.hasMoreTokens()) {
+								var tkn = st.nextToken();
+								if (tkn.equals("columns")) {
+									width = Integer.parseInt(st.nextToken());
+								}
 							}
 						}
+					} catch (Exception e2) {
 					}
-				} catch (Exception e2) {
 				}
 			}
 		}
-		return 80;
+		return width;
 
 	}
 
@@ -77,7 +85,7 @@ public class LinuxTerminal extends FallbackTerminal {
 			public Sequence newSeq() {
 				return createSequence();
 			}
-			
+
 			@Override
 			public Sequence box(BoxChar ch) {
 				switch (ch) {

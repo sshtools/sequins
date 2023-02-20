@@ -6,8 +6,9 @@ public abstract class ProgressBuilder {
 
 	protected boolean indeterminate;
 	protected boolean percentageText;
-	protected Optional<Long> rateLimit;
+	protected Optional<Long> rateLimit = Optional.empty();
 	protected boolean interruptable;
+	protected boolean timing = !System.getProperty("sequins.timeProgress", "true").equals("false");
 	protected String message;
 	protected Object[] args;
 
@@ -32,6 +33,15 @@ public abstract class ProgressBuilder {
 		return this;
 	}
 
+	public ProgressBuilder withTiming() {
+		return withTiming(true);
+	}
+
+	public ProgressBuilder withTiming(boolean timing) {
+		this.timing = true;
+		return this;
+	}
+
 	public ProgressBuilder withRateLimit() {
 		return withRateLimit(500);
 	}
@@ -43,12 +53,15 @@ public abstract class ProgressBuilder {
 
 	public final Progress build() {
 		var b = buildImpl();
+		if (rateLimit.isPresent()) {
+			b = new RateLimitedProgress(b, rateLimit.get());
+		}
+		if(timing) {
+			b = new TimedProgress(b); 
+		}
 		if (interruptable) {
 			b = new InterruptableProgress(b);
 			InterruptableProgress.attachThread(b);			
-		}
-		if (rateLimit.isPresent()) {
-			b = new RateLimitedProgress(b, rateLimit.get());
 		}
 		return b;
 	}
