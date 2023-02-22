@@ -43,8 +43,8 @@ public class InterruptableProgress implements Progress {
 	}
 
 	@Override
-	public void progressed(Optional<String> message, Optional<Integer> percent, Object... args) {
-		delegate.progressed(message, percent, args);
+	public void progressed(Optional<Integer> percent, Optional<String> message, Object... args) {
+		delegate.progressed(percent, message, args);
 	}
 
 	@Override

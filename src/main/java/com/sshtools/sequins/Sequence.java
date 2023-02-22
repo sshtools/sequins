@@ -43,6 +43,12 @@ public abstract class Sequence {
 		BRIGHT_GREEN, BRIGHT_YELLOW, BRIGHT_BLUE, BRIGHT_MAGENTA, BRIGHT_CYNA, BRIGHT_WHITE
 	}
 	
+	public enum Shade {
+		DARK_SHADE,
+		MEDIUM_SHADE,
+		LIGHT_SHADE
+	}
+	
 	public enum BoxChar {
 		BOX_TOP_LEFT,
 		BOX_TOP,
@@ -294,13 +300,31 @@ public abstract class Sequence {
 	public final Sequence cr(int repeat) {
 		return noTextAdvance(() -> ch(repeat, CR));
 	}
+	public Sequence shade(Shade ch) {
+		return shade(1, ch);
+	}
+	
+	public Sequence shade(int repeat, Shade ch) {
+		switch(ch) {
+		case DARK_SHADE:
+			return ch(repeat, '#');
+		case MEDIUM_SHADE:
+			return ch(repeat, '-');
+		default:
+			return ch(repeat, '.');
+		}
+	}
 	
 	public Sequence box(BoxChar ch) {
+		return box(1, ch);
+	}
+	
+	public Sequence box(int repeat, BoxChar ch) {
 		switch(ch) {
 		case BOX_TOP:
 		case BOX_BOTTOM:
 		case BOX_MIDDLE:
-			return ch('-');
+			return ch(repeat, '-');
 		case BOX_TOP_LEFT:
 		case BOX_TOP_MIDDLE:
 		case BOX_TOP_RIGHT:
@@ -310,13 +334,13 @@ public abstract class Sequence {
 		case BOX_BOTTOM_LEFT:
 		case BOX_BOTTOM_MIDDLE:
 		case BOX_BOTTOM_RIGHT:
-			return ch('+');
+			return ch(repeat, '+');
 		case BOX_LEFT:
 		case BOX_RIGHT:
 		case BOX_CENTER:
-			return ch('|');
+			return ch(repeat, '|');
 		default:
-			return ch('*');
+			return ch(repeat, '*');
 		}
 	}
 
@@ -430,6 +454,10 @@ public abstract class Sequence {
 
 	public final Sequence tab(int repeat) {
 		return noTextAdvance(() -> ch(repeat, TAB));
+	}
+
+	public final Sequence lf() {
+		return str(System.getProperty("line.separator"));
 	}
 
 	public final Sequence nl() {

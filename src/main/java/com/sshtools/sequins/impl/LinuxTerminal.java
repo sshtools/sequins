@@ -20,6 +20,7 @@ import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.StringTokenizer;
 
+import com.sshtools.sequins.Constraint;
 import com.sshtools.sequins.Progress;
 import com.sshtools.sequins.ProgressBuilder;
 import com.sshtools.sequins.Sequence;
@@ -29,7 +30,7 @@ public class LinuxTerminal extends FallbackTerminal {
 	private static final long WIDTH_REFRESH_TIME = 1000;
 
 	private long lastWidth = -1;
-	private int width = 80;
+	private Constraint constraint = Constraint.of(80, 24);
 
 	@Override
 	public ProgressBuilder progressBuilder() {
@@ -42,38 +43,67 @@ public class LinuxTerminal extends FallbackTerminal {
 	}
 
 	@Override
-	public int getWidth() {
+	public Constraint constraint() {
 		if (lastWidth < System.currentTimeMillis() - WIDTH_REFRESH_TIME) {
 			lastWidth = System.currentTimeMillis();
+			var width = -1;
+			var height = -1;
 			try {
 				width = Integer.parseInt(System.getenv("COLUMNS"));
 			} catch (Exception e3) {
+			}
+			try {
+				height = Integer.parseInt(System.getenv("LINES"));
+			} catch (Exception e3) {
+			}
+			
+			if(width == -1 || height == -1) {
 				try {
 					/* This is the only method that works with sudo */
-					var p = new ProcessBuilder("tput", "cols").redirectError(Redirect.INHERIT)
+					var p = new ProcessBuilder("tput", "cols", "lines").redirectError(Redirect.INHERIT)
 							.redirectInput(Redirect.INHERIT).start();
 					try (var in = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
-						width = Integer.parseInt(in.readLine());
+						var l = Integer.parseInt(in.readLine());
+						if(width == -1)
+							width = l;
+						l = Integer.parseInt(in.readLine());
+						if(height == -1) {
+							height = l;
+						} 
 					}
 				} catch (Exception e) {
-					try {
-						var p = new ProcessBuilder("stty", "-a").redirectError(Redirect.INHERIT)
-								.redirectInput(Redirect.INHERIT).start();
-						try (var in = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
-							var st = new StringTokenizer(in.readLine());
-							while (st.hasMoreTokens()) {
-								var tkn = st.nextToken();
-								if (tkn.equals("columns")) {
-									width = Integer.parseInt(st.nextToken());
-								}
-							}
-						}
-					} catch (Exception e2) {
-					}
 				}
 			}
+			
+			if(width == -1 || height == -1) {
+				try {
+					var p = new ProcessBuilder("stty", "-a").redirectError(Redirect.INHERIT)
+							.redirectInput(Redirect.INHERIT).start();
+					try (var in = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+						var st = new StringTokenizer(in.readLine());
+						while (st.hasMoreTokens()) {
+							var tkn = st.nextToken();
+							if (tkn.equals("columns") && width == -1) {
+								width = Integer.parseInt(st.nextToken());
+							}
+							if (tkn.equals("rows") && height == -1) {
+								height = Integer.parseInt(st.nextToken());
+							}
+						}
+					}
+				} catch (Exception e2) {
+				}
+			}
+			
+			if(width == -1)
+				width = 80;
+			
+			if(height == -1)
+				height = 24;
+			
+			constraint = Constraint.of(width, height);
 		}
-		return width;
+		return constraint;
 
 	}
 
@@ -84,6 +114,18 @@ public class LinuxTerminal extends FallbackTerminal {
 			@Override
 			public Sequence newSeq() {
 				return createSequence();
+			}
+
+			@Override
+			public Sequence shade(int repeat, Shade ch) {
+				switch(ch) {
+				case DARK_SHADE:
+					return ch(repeat, '▓');
+				case MEDIUM_SHADE:
+					return ch(repeat, '▒');
+				default:
+					return ch(repeat, '░');
+				}
 			}
 
 			@Override

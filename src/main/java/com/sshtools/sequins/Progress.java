@@ -52,14 +52,14 @@ public interface Progress extends Closeable {
 	Progress newJob(String name, Object... args);
 
 	default void progressed(int percent) {
-		progressed(Optional.empty(), Optional.of(percent));
+		progressed(Optional.of(percent), Optional.empty());
 	}
 
 	default void progressed(String message, Object... args) {
-		progressed(Optional.of(message), Optional.empty(), args);
+		progressed(Optional.empty(), Optional.of(message), args);
 	}
 
-	void progressed(Optional<String> message, Optional<Integer> percent, Object... args);
+	void progressed(Optional<Integer> percent, Optional<String> message, Object... args);
 	
 	default void error(String message, Object... args) {
 		error(message, null, args);
@@ -86,7 +86,7 @@ public interface Progress extends Closeable {
 			}
 			
 			@Override
-			public void progressed(Optional<String> message, Optional<Integer> percent, Object... args) {
+			public void progressed(Optional<Integer> percent, Optional<String> message, Object... args) {
 			}
 			
 			@Override

@@ -65,7 +65,7 @@ public class RateLimitedProgress implements Progress {
 	}
 
 	@Override
-	public void progressed(Optional<String> message, Optional<Integer> percent, Object... args) {
+	public void progressed(Optional<Integer> percent, Optional<String> message, Object... args) {
 		synchronized (lock) {
 			this.message = message;
 			this.percent = percent;
@@ -81,7 +81,7 @@ public class RateLimitedProgress implements Progress {
 					fpc = RateLimitedProgress.this.percent;
 					fargs = RateLimitedProgress.this.args;
 				}
-				delegate.progressed(fmsg, fpc, fargs);
+				delegate.progressed(fpc, fmsg, fargs);
 			}, ms, TimeUnit.MILLISECONDS);
 		}
 

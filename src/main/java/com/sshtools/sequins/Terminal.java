@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ServiceLoader;
 
-public interface Terminal extends Prompter {
+public interface Terminal extends Prompter, DrawContext {
 	
 	static Terminal create() {
 		var l = new ArrayList<TerminalFactory>();
@@ -116,8 +116,6 @@ public interface Terminal extends Prompter {
 	PrintWriter getWriter();
 
 	PrintWriter getErrorWriter();
-
-	int getWidth();
 
 	Sequence createSequence();
 

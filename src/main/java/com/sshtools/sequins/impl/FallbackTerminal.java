@@ -17,6 +17,7 @@ package com.sshtools.sequins.impl;
 
 import java.io.PrintWriter;
 
+import com.sshtools.sequins.Constraint;
 import com.sshtools.sequins.Progress;
 import com.sshtools.sequins.ProgressBuilder;
 import com.sshtools.sequins.Sequence;
@@ -42,8 +43,8 @@ public class FallbackTerminal implements Terminal {
 	}
 
 	@Override
-	public int getWidth() {
-		return 132;
+	public Constraint constraint() {
+		return Constraint.of(132, 24);
 	}
 
 	@Override

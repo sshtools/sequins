@@ -194,7 +194,7 @@ public class DefaultConsoleProgress implements Progress {
 	}
 
 	@Override
-	public final void progressed(Optional<String> message, Optional<Integer> percent, Object... args) {
+	public final void progressed(Optional<Integer> percent, Optional<String> message, Object... args) {
 		synchronized (lock) {
 			if (percent.isPresent()) {
 				stopSpinner(); // Now have actual progress

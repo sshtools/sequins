@@ -26,8 +26,9 @@ import java.util.List;
 import java.util.Map;
 
 import com.sshtools.sequins.Sequence.BoxChar;
+import com.sshtools.sequins.Twidget.AbstractTwidget;
 
-public class Table {
+public class Table extends AbstractTwidget {
 
 	public enum Alignment {
 		CENTER, LEFT, RIGHT
@@ -44,19 +45,18 @@ public class Table {
 	private int maxCellWidth = -1;
 	private int minCellWidth = -1;
 	private List<Row> rows = new ArrayList<Row>();
-	private Terminal terminal;
 	private ResizeMode resizeMode = ResizeMode.FULL_WIDTH;
 	private CellRenderer<Object> cellRenderer;
 	private Map<Class<?>, CellRenderer<?>> renderers =new HashMap<>();
 
-	public Table(Terminal writer, String... headers) {
-		this.terminal = writer;
+	public Table(Terminal terminal, String... headers) {
+		super(terminal);
 		cellRenderer = CellRenderer.defaultRenderer(terminal);
 		
 		if(headers.length > 0)
 			header(new Row(headers).strong(true));
 	}
-	
+
 	public CellRenderer<?> defaultCellRenderer() {
 		return cellRenderer;
 	}
@@ -96,18 +96,18 @@ public class Table {
 		this.insets = insets;
 	}
 
-	public void draw() throws IOException {
+	@Override
+	public Sequence draw(DrawContext context, Sequence seq) throws IOException {
 		
 		var maxColumnWidths = new ArrayList<Integer>();
-		var writer = terminal.getWriter();
 		if (header != null) {
-			checkRow(-1, maxColumnWidths, header);
+			checkRow(context, -1, maxColumnWidths, header);
 		}
 		for (int i = 0; i < rows.size(); i++) {
-			checkRow(i, maxColumnWidths, rows.get(i));
+			checkRow(context, i, maxColumnWidths, rows.get(i));
 		}
 		if (footer != null) {
-			checkRow(-1, maxColumnWidths, footer);
+			checkRow(context, -1, maxColumnWidths, footer);
 		}
 
 		var top = new StringBuilder(drawBoxChar(BoxChar.BOX_TOP_LEFT));
@@ -118,7 +118,7 @@ public class Table {
 			if (!first) {
 				middle.append(drawBoxChar(BoxChar.BOX_MIDDLE_MIDDLE));
 			}
-			if (!first) {
+			if (!first) { 
 				top.append(drawBoxChar(BoxChar.BOX_TOP_MIDDLE));
 			}
 			if (!first) {
@@ -134,26 +134,31 @@ public class Table {
 		bottom.append(drawBoxChar(BoxChar.BOX_BOTTOM_RIGHT));
 
 		if(bordered()) {
-			writer.println(top.toString());
+			seq.str(top.toString());
+			seq.lf();
 		}
 		if (header != null) {
-			printRow(header, maxColumnWidths);
+			printRow(seq, header, maxColumnWidths);
 			if(bordered()) {
-				writer.println(middle.toString());
+				seq.str(middle.toString());
+				seq.lf();
 			}
 		}
 		for (Row row : rows) {
-			printRow(row, maxColumnWidths);
+			printRow(seq, row, maxColumnWidths);
 		}
 		if (footer != null) {
-			writer.println(middle.toString());
-			printRow(footer, maxColumnWidths);
+			seq.str(middle.toString());
+			seq.lf();
+			printRow(seq, footer, maxColumnWidths);
 		}
 		
 		if(bordered()) {
-			writer.println(bottom.toString());
+			seq.str(bottom.toString());
+			seq.lf();
 		}
 
+		return seq;
 	}
 
 	public Row footer() {
@@ -224,7 +229,7 @@ public class Table {
 
 	protected String formatRow(int rowLine, Row row, List<Integer> maxColumnWidths) {
 		Iterator<Integer> width = maxColumnWidths.iterator();
-		var buf = terminal.createSequence();
+		var buf = getTerminal().createSequence();
 		int empty = 0;
 		int col = 0;
 		for (Cell<?> cell : row) {
@@ -290,12 +295,12 @@ public class Table {
 		return getRenderer(cell).render(cell, maxw);
 	}
 
-	private void checkRow(int rowIndex, List<Integer> maxColumWidths, Row row) {
+	private void checkRow(DrawContext draw, int rowIndex, List<Integer> maxColumWidths, Row row) {
 		while (maxColumWidths.size() < row.size()) {
 			maxColumWidths.add(0);
 		}
 		
-		var w = terminal.getWidth();
+		var w = draw.getWidth();
 		var available = w - ( bordered() ? 1 + maxColumWidths.size() : 0 ) - ( ( insets * 2 ) * maxColumWidths.size() );
 		var pc = available / row.size();
 		
@@ -319,30 +324,29 @@ public class Table {
 	}
 
 	private String drawBoxChar(BoxChar boxChar) {
-		var bui = terminal.createSequence();
+		var bui = getTerminal().createSequence();
 		bui.grOn();
 		bui.box(boxChar);
 		bui.grOff();
 		return bui.toString();
 	}
 
-	private void printRow(Row row, List<Integer> maxColumnWidths) throws IOException {
+	private void printRow(Sequence seq, Row row, List<Integer> maxColumnWidths) throws IOException {
 		int rowLine = 0;
-		var writer = terminal.getWriter();
 		while (true) {
 			var formatRow = formatRow(rowLine, row, maxColumnWidths);
 			if (formatRow == null) {
 				break;
 			}
 			if(bordered())
-				writer.print(drawBoxChar(BoxChar.BOX_LEFT));
+				seq.box(BoxChar.BOX_LEFT);
 			
-			writer.print(formatRow);
+			seq.str(formatRow);
 			
 			if(bordered())
-				writer.print(drawBoxChar(BoxChar.BOX_RIGHT));
+				seq.box(BoxChar.BOX_RIGHT);
 			
-			writer.println();
+			seq.lf();
 			rowLine++;
 		}
 	}

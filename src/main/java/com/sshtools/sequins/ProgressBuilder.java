@@ -8,7 +8,7 @@ public abstract class ProgressBuilder {
 	protected boolean percentageText;
 	protected Optional<Long> rateLimit = Optional.empty();
 	protected boolean interruptable;
-	protected boolean timing = !System.getProperty("sequins.timeProgress", "true").equals("false");
+	protected boolean timing = !System.getProperty("sequins.timeProgress", "false").equals("false");
 	protected String message;
 	protected Object[] args;
 
@@ -38,7 +38,7 @@ public abstract class ProgressBuilder {
 	}
 
 	public ProgressBuilder withTiming(boolean timing) {
-		this.timing = true;
+		this.timing = timing;
 		return this;
 	}
 
