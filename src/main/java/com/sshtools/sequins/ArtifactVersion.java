@@ -20,8 +20,8 @@ public class ArtifactVersion {
 			return fakeVersion;
 		}
 
-		String detectedVersion = versions.getOrDefault(artifactId, "");
-		if (detectedVersion.equals(""))
+		String detectedVersion = versions.getOrDefault(groupId+ ":" + artifactId, "");
+		if (!detectedVersion.equals(""))
 			return detectedVersion;
 
 		// try to load from maven properties first
@@ -63,7 +63,9 @@ public class ArtifactVersion {
 				var docBuilderFactory = DocumentBuilderFactory.newInstance();
 				var docBuilder = docBuilderFactory.newDocumentBuilder();
 				var doc = docBuilder.parse(new File("pom.xml"));
-				detectedVersion = doc.getDocumentElement().getElementsByTagName("version").item(0).getTextContent();
+				if(doc.getDocumentElement().getElementsByTagName("name").item(0).getTextContent().equals(artifactId) && doc.getDocumentElement().getElementsByTagName("group").item(0).getTextContent().equals(groupId)) {
+					detectedVersion = doc.getDocumentElement().getElementsByTagName("version").item(0).getTextContent();
+				}
 			} catch (Exception e) {
 			}
 
@@ -78,7 +80,7 @@ public class ArtifactVersion {
 			detectedVersion = detectedVersion.substring(0, detectedVersion.length() - 9) + "-0";
 		}
 
-		versions.put(artifactId, detectedVersion);
+		versions.put(groupId+ ":" + artifactId, detectedVersion);
 
 		return detectedVersion;
 	}
