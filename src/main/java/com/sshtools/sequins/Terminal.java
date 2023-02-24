@@ -46,6 +46,22 @@ public interface Terminal extends Prompter, DrawContext {
 		return isYes(prompt(createSequence().ch('[').boldOn().ch('Y').boldOff().str("]es,[N]o: ").toString()), true);
 	}
 
+	default boolean yesNo(String fmt, Object... args) {
+		return yesNo(PromptContext.empty(), fmt, args);
+	}
+
+	default boolean noYes(String fmt, Object... args) {
+		return noYes(PromptContext.empty(), fmt, args);
+	}
+
+	default String prompt(String fmt, Object... args) {
+		return prompt(PromptContext.empty(), fmt, args);
+	}
+
+	default char[] password(String fmt, Object... args) {
+		return password(PromptContext.empty(), fmt, args);
+	}
+
 	default boolean yesNo(PromptContext context, String fmt, Object... args) {
 		return isYes(prompt(context, 
 						createSequence().fmt(fmt, args).str(" [").boldOn().ch('Y').boldOff().str("]es,[N]o: ").toString()), true);

@@ -62,7 +62,7 @@ public class FallbackTerminal implements Terminal {
 			}
 			
 		};
-	}
+	} 
 
 	@Override
 	public ProgressBuilder progressBuilder() {
