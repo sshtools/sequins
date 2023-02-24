@@ -46,16 +46,16 @@ public interface Terminal extends Prompter, DrawContext {
 		return isYes(prompt(createSequence().ch('[').boldOn().ch('Y').boldOff().str("]es,[N]o: ").toString()), true);
 	}
 
-	default boolean yesNo(String fmt, Object... args) {
-		return isYes(prompt(
+	default boolean yesNo(PromptContext context, String fmt, Object... args) {
+		return isYes(prompt(context, 
 						createSequence().fmt(fmt, args).str(" [").boldOn().ch('Y').boldOff().str("]es,[N]o: ").toString()), true);
 	}
 	default boolean noYes() {
 		return isYes(prompt(createSequence().str("[Y]es,[").boldOn().ch('N').boldOff().str("]o: ").toString()), false);
 	}
 
-	default boolean noYes(String fmt, Object... args) {
-		return isYes(prompt(
+	default boolean noYes(PromptContext context, String fmt, Object... args) {
+		return isYes(prompt(context,
 						createSequence().fmt(fmt, args).str(" [Y]es,[").boldOn().ch('N').boldOff().str("]o: ").toString()), false);
 	}
 
@@ -71,7 +71,7 @@ public interface Terminal extends Prompter, DrawContext {
 		return console.readLine();
 	}
 
-	default String prompt(String fmt, Object... args) {
+	default String prompt(PromptContext context, String fmt, Object... args) {
 		var console = System.console();
 		if (console == null) {
 			try {
@@ -98,7 +98,7 @@ public interface Terminal extends Prompter, DrawContext {
 		return console.readPassword();
 	}
 
-	default char[] password(String fmt, Object... args) {
+	default char[] password(PromptContext context, String fmt, Object... args) {
 		var console = System.console();
 		if (console == null) {
 			try {
