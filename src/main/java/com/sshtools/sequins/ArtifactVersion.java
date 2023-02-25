@@ -23,26 +23,45 @@ public class ArtifactVersion {
 		String detectedVersion = versions.getOrDefault(groupId+ ":" + artifactId, "");
 		if (!detectedVersion.equals(""))
 			return detectedVersion;
-
-		// try to load from maven properties first
+		
+		/* installed apps may have a .install4j/i4jparams.conf. If this XML
+		 * file exists, it will contain the full application version which
+		 * will have the build number in it too. 
+		 */
 		try {
-			var p = new Properties();
-			var is = ArtifactVersion.class.getClassLoader()
-					.getResourceAsStream("META-INF/maven/" + groupId + "/" + artifactId + "/pom.properties");
-			if (is == null) {
-				is = ArtifactVersion.class
-						.getResourceAsStream("/META-INF/maven/" + groupId + "/" + artifactId + "/pom.properties");
-			}
-			if (is != null) {
-				try {
-					p.load(is);
-					detectedVersion = p.getProperty("version", "");
-				} finally {
-					is.close();
-				}
+			var docBuilderFactory = DocumentBuilderFactory.newInstance();
+			var docBuilder = docBuilderFactory.newDocumentBuilder();
+			var doc = docBuilder.parse(new File(new File(".install4j"),"i4jparams.conf"));
+			var el = doc.getDocumentElement().getElementsByTagName("general").item(0);
+			var mediaName = el.getAttributes().getNamedItem("mediaName").getTextContent();
+			if(mediaName.startsWith(artifactId + "-")) {
+				detectedVersion = el.getAttributes().getNamedItem("applicationVersion").getTextContent();
 			}
 		} catch (Exception e) {
-			// ignore
+		}
+
+		if (detectedVersion.equals("")) {		
+	
+			// try to load from maven properties first
+			try {
+				var p = new Properties();
+				var is = ArtifactVersion.class.getClassLoader()
+						.getResourceAsStream("META-INF/maven/" + groupId + "/" + artifactId + "/pom.properties");
+				if (is == null) {
+					is = ArtifactVersion.class
+							.getResourceAsStream("/META-INF/maven/" + groupId + "/" + artifactId + "/pom.properties");
+				}
+				if (is != null) {
+					try {
+						p.load(is);
+						detectedVersion = p.getProperty("version", "");
+					} finally {
+						is.close();
+					}
+				}
+			} catch (Exception e) {
+				// ignore
+			}
 		}
 
 		// fallback to using Java API
