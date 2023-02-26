@@ -165,7 +165,7 @@ public interface Terminal extends Prompter, DrawContext {
 	
 	default Terminal error(boolean showTrace, String message, Throwable exception, Object... args) {
 		if(message != null) {
-			error(message, args);
+			errorln(message, args);
 		}
 		if(exception != null) {
 			var seq = createSequence();
