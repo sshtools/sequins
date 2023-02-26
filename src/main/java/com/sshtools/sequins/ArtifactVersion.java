@@ -32,7 +32,7 @@ public class ArtifactVersion {
 			var docBuilderFactory = DocumentBuilderFactory.newInstance();
 			var docBuilder = docBuilderFactory.newDocumentBuilder();
 			var appDir = new File(System.getProperty("install4j.installationDir", System.getProperty("user.dir")));
-			var doc = docBuilder.parse(new File(appDir,"i4jparams.conf"));
+			var doc = docBuilder.parse(new File(new File(appDir, ".install4j"),"i4jparams.conf"));
 			var el = doc.getDocumentElement().getElementsByTagName("general").item(0);
 			var mediaName = el.getAttributes().getNamedItem("mediaName").getTextContent();
 			if(mediaName.startsWith(artifactId + "-")) {
