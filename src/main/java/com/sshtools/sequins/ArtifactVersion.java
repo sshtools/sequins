@@ -11,8 +11,12 @@ import javax.xml.parsers.DocumentBuilderFactory;
 public class ArtifactVersion {
 
 	static Map<String, String> versions = Collections.synchronizedMap(new HashMap<>());
-	
+
 	public static String getVersion(String groupId, String artifactId) {
+		return getVersion(null, groupId, artifactId);
+	}
+	
+	public static String getVersion(String installerShortName, String groupId, String artifactId) {
 		String fakeVersion = Boolean.getBoolean("jadaptive.development")
 				? System.getProperty("jadaptive.development.version", System.getProperty("jadaptive.devVersion"))
 				: null;
@@ -28,17 +32,19 @@ public class ArtifactVersion {
 		 * file exists, it will contain the full application version which
 		 * will have the build number in it too. 
 		 */
-		try {
-			var docBuilderFactory = DocumentBuilderFactory.newInstance();
-			var docBuilder = docBuilderFactory.newDocumentBuilder();
-			var appDir = new File(System.getProperty("install4j.installationDir", System.getProperty("user.dir")));
-			var doc = docBuilder.parse(new File(new File(appDir, ".install4j"),"i4jparams.conf"));
-			var el = doc.getDocumentElement().getElementsByTagName("general").item(0);
-			var mediaName = el.getAttributes().getNamedItem("mediaName").getTextContent();
-			if(mediaName.startsWith(artifactId + "-")) {
-				detectedVersion = el.getAttributes().getNamedItem("applicationVersion").getTextContent();
+		if(installerShortName != null) {
+			try {
+				var docBuilderFactory = DocumentBuilderFactory.newInstance();
+				var docBuilder = docBuilderFactory.newDocumentBuilder();
+				var appDir = new File(System.getProperty("install4j.installationDir", System.getProperty("user.dir")));
+				var doc = docBuilder.parse(new File(new File(appDir, ".install4j"),"i4jparams.conf"));
+				var el = doc.getDocumentElement().getElementsByTagName("general").item(0);
+				var mediaName = el.getAttributes().getNamedItem("mediaName").getTextContent();
+				if(mediaName.startsWith(installerShortName + "-")) {
+					detectedVersion = el.getAttributes().getNamedItem("applicationVersion").getTextContent();
+				}
+			} catch (Exception e) {
 			}
-		} catch (Exception e) {
 		}
 
 		if (detectedVersion.equals("")) {		
