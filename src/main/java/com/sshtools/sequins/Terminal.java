@@ -22,6 +22,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ServiceLoader;
+import java.util.Set;
 
 public interface Terminal extends Prompter, DrawContext {
 	
@@ -119,7 +120,7 @@ public interface Terminal extends Prompter, DrawContext {
 		if (console == null) {
 			try {
 				var writer = getWriter();
-				writer.print(createSequence().msg(fmt, args).toString());
+				writer.print(createSequence().msg(fmt, args).toString() + ": ");
 				writer.flush();
 				return new BufferedReader(new InputStreamReader(System.in)).readLine().toCharArray();
 			} catch (IOException e) {
@@ -144,6 +145,10 @@ public interface Terminal extends Prompter, DrawContext {
 		wrt.print(seq);
 		wrt.flush();
 		return this;
+	}
+	
+	default Set<Capability> capabilities() {
+		return Collections.emptySet();
 	}
 	
 	default Terminal messageln(String message, Object... args) {

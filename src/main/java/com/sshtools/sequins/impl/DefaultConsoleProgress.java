@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import com.sshtools.sequins.Capability;
 import com.sshtools.sequins.Progress;
 import com.sshtools.sequins.Sequence;
 import com.sshtools.sequins.Terminal;
@@ -46,7 +47,7 @@ public class DefaultConsoleProgress implements Progress {
 		public Object[] args() {
 			return args;
 		}
-		
+
 		public Optional<Level> level() {
 			return level;
 		}
@@ -65,6 +66,7 @@ public class DefaultConsoleProgress implements Progress {
 
 		boolean active = true;
 		int index;
+		boolean firstSpin;
 
 		Spinner() {
 			super("ProgressSpinner");
@@ -77,10 +79,10 @@ public class DefaultConsoleProgress implements Progress {
 					synchronized (lock) {
 						printJob();
 					}
-					index++;
+					firstSpin = true;
 					if (index == spinnerChars.length)
 						index = 0;
-					Thread.sleep(100);
+					Thread.sleep(terminal.capabilities().contains(Capability.CURSOR_MOVEMENT) ? 100 : 5000);
 				}
 			} catch (InterruptedException ie) {
 			}
@@ -99,15 +101,16 @@ public class DefaultConsoleProgress implements Progress {
 	private int[] spinnerChars = SPINNER_CHARS;
 	private boolean cancelled;
 	private List<Progress> jobs = new ArrayList<>();
-	
-	protected final Terminal terminal;	
+
+	protected final Terminal terminal;
 	protected final boolean indeterminate;
 	protected final boolean percentageText;
 
-	DefaultConsoleProgress(Terminal terminal, boolean showSpinner, boolean percentageText, String name, Object... args) {
+	DefaultConsoleProgress(Terminal terminal, boolean showSpinner, boolean percentageText, String name,
+			Object... args) {
 		this(terminal, showSpinner, percentageText, new Object(), 0, name, args);
 	}
-	
+
 	@Override
 	public void cancel() {
 		cancelled = true;
@@ -135,18 +138,19 @@ public class DefaultConsoleProgress implements Progress {
 		this.spinnerChars = spinnerChars.codePoints().toArray();
 	}
 
-	protected DefaultConsoleProgress(Terminal terminal, boolean showSpinner, boolean percentageText, Object lock, int indent, String name, Object... args) {
+	protected DefaultConsoleProgress(Terminal terminal, boolean showSpinner, boolean percentageText, Object lock,
+			int indent, String name, Object... args) {
 		this.terminal = terminal;
 		this.lock = lock;
 		this.indeterminate = showSpinner;
 		this.percentageText = percentageText;
-		this.message = name == null ? null :  new Formattable(name, args);
+		this.message = name == null ? null : new Formattable(name, args);
 		this.indent = indent;
 		for (int i = 0; i < indent; i++)
 			indentStr.append("   ");
 		postConstruct();
 	}
-	
+
 	protected void postConstruct() {
 		if (message != null) {
 			printJob();
@@ -160,23 +164,27 @@ public class DefaultConsoleProgress implements Progress {
 
 	@Override
 	public final void close() throws IOException {
+		stopSpinner(new ArrayList<>());
 		synchronized (lock) {
-			stopSpinner();
 			var wasNlNeeded = newlineNeeded;
-			printJob();
 			if (wasNlNeeded)
 				printNewline();
 		}
+		onClose();
+	}
+
+	protected void onClose() {
 	}
 
 	@Override
 	public final void message(Level level, String message, Object... args) {
+		stopSpinner(new ArrayList<>());
 		synchronized (lock) {
-			stopSpinner();
 			this.message = new Formattable(Optional.of(level), message, args);
 			try {
+				if (newlineNeeded)
+					printNewline();
 				printJob();
-				printNewline();
 			} finally {
 				this.message = null;
 			}
@@ -185,7 +193,7 @@ public class DefaultConsoleProgress implements Progress {
 
 	@Override
 	public final Progress newJob(String name, Object... args) {
-		stopSpinner();
+		stopSpinner(new ArrayList<>());
 		if (newlineNeeded)
 			printNewline();
 		var j = createNewJob(lock, name, args);
@@ -195,38 +203,32 @@ public class DefaultConsoleProgress implements Progress {
 
 	@Override
 	public final void progressed(Optional<Integer> percent, Optional<String> message, Object... args) {
+		if (percent.isPresent()) {
+			stopSpinner(new ArrayList<>()); // Now have actual progress
+		}
 		synchronized (lock) {
-			if (percent.isPresent()) {
-				stopSpinner(); // Now have actual progress
-			}
 			this.percent = percent;
-			if(message.isPresent()) {
-				this.message = new Formattable(this.message == null ? Optional.of(Level.NORMAL) : this.message.level, message.get(), args);
+			if (message.isPresent()) {
+				this.message = new Formattable(this.message == null ? Optional.of(Level.NORMAL) : this.message.level,
+						message.get(), args);
 			}
 			printJob();
 		}
 	}
 
-	protected void printSpinner(Sequence seq) {
-		if(indeterminate) {
-			if(spinner == null) {
-				if(percentageText) {
-					seq.fmt("%3d%%", percent.get());
-				}
-			}
-			else {
-				if(percentageText) {
-					seq.msg("{0} {1}", Character.toString(spinnerChars[spinner.index]), String.format("%3d%%", percent.get()));
-				}
-				else {
-					seq.msg(" {0}", Character.toString(spinnerChars[spinner.index]));
-				}
-			}
+	protected void printPercentage(Sequence seq) {
+		if (spinner == null) {
+			seq.str("    ");
+		} else {
+			seq.fmt("%3d%%", percent.get());
 		}
-		else {
-			if(percentageText) {
-				seq.fmt("%3d%%", percent.get());
-			}
+	}
+
+	protected void printSpinner(Sequence seq) {
+		if (spinner == null) {
+			seq.ch(' ');
+		} else {
+			seq.msg("{0}", Character.toString(spinnerChars[spinner.index]));
 		}
 	}
 
@@ -241,52 +243,103 @@ public class DefaultConsoleProgress implements Progress {
 		seq.str(message);
 	}
 
-	protected DefaultConsoleProgress createNewJob(Object lock, String name,  Object... args) {
+	protected DefaultConsoleProgress createNewJob(Object lock, String name, Object... args) {
 		return new DefaultConsoleProgress(terminal, indeterminate, percentageText, lock, indent + 1, name, args);
 	}
 
 	void printJob() {
 		synchronized (lock) {
-			newlineNeeded = true;
 			var width = terminal.getWidth();
-			var seq = terminal.createSequence();
-			seq.str(indentStr);
-			if (indent > 0) {
-				printIndent(seq);
+			Sequence seq = null;
+			var tailSeq = terminal.createSequence();
+
+			if (!terminal.capabilities().contains(Capability.CURSOR_MOVEMENT) && spinner != null && spinner.firstSpin) {
+				printSpinner(tailSeq);
+				seq = tailSeq;
+			} else {
+
+				if (indeterminate) {
+					if (message != null) {
+						tailSeq.ch(' ');
+					}
+					printSpinner(tailSeq);
+				}
+				if (percentageText) {
+					if (tailSeq.textLength() > 0)
+						tailSeq.ch(' ');
+					printPercentage(null);
+				}
+
+				if (message == null) {
+					seq = tailSeq;
+				} else {
+					seq = terminal.createSequence();
+					seq.str(indentStr);
+					if (indent > 0) {
+						printIndent(seq);
+					}
+					printMessage(seq, width - tailSeq.textLength() - seq.textLength());
+					seq.seq(tailSeq);
+				}
+
+				if (terminal.capabilities().contains(Capability.CURSOR_MOVEMENT)) {
+					seq.cr();
+				}
 			}
-			var indentLen = seq.textLength();
-			var spinnerSeq = terminal.createSequence();
-			printSpinner(spinnerSeq);
-			var len = spinnerSeq.textLength();
-			if (message != null) {
-				printMessage(seq, width - len - indentLen + (len > 0 ? 1 : 0));
-			}
-			if(len > 0)
-				seq.ch(' ');
-			seq.seq(spinnerSeq);
-			seq.cr();
+
 			var wrt = terminal.getWriter();
 			wrt.print(seq);
+			newlineNeeded = true;
 			wrt.flush();
 		}
 	}
 
 	void printNewline() {
 		terminal.getWriter().println();
-		stopSpinner();
+		stopSpinner(new ArrayList<>());
 		newlineNeeded = false;
 	}
 
 	void startSpinner() {
 		synchronized (lock) {
-			if (spinner == null) {
+			if (spinner == null && terminal.capabilities().contains(Capability.CURSOR_MOVEMENT)) {
 				spinner = new Spinner();
 				spinner.start();
 			}
 		}
 	}
 
-	void stopSpinner() {
+	boolean isSpinning() {
+		synchronized (lock) {
+			if (spinner != null && spinner.isAlive()) {
+				return true;
+			}
+			for (var j : jobs) {
+				if (((DefaultConsoleProgress) j).isSpinning()) {
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+
+	void interrupt(List<DefaultConsoleProgress> stopped) {
+
+		if (isSpinning()) {
+			stopSpinner(stopped);
+		}
+		for (var j : jobs) {
+			((DefaultConsoleProgress) j).interrupt(stopped);
+		}
+		if (newlineNeeded) {
+			printNewline();
+		}
+	}
+
+	void stopSpinner(List<DefaultConsoleProgress> stopped) {
+		for (var j : jobs) {
+			((DefaultConsoleProgress) j).stopSpinner(stopped);
+		}
 		synchronized (lock) {
 			if (spinner != null) {
 				spinner.active = false;
@@ -296,6 +349,7 @@ public class DefaultConsoleProgress implements Progress {
 				} catch (InterruptedException e) {
 					throw new IllegalStateException("Interrupted.", e);
 				} finally {
+					stopped.add(this);
 					spinner = null;
 				}
 				printJob();

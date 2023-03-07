@@ -44,12 +44,10 @@ public class LinuxTerminalProgress extends DefaultConsoleProgress {
 
 	@Override
 	protected void printIndent(Sequence seq) {
-		var wrt = terminal.getWriter();
 		if (indent() > 1)
-			wrt.print("○ ");
+			seq.str("○ ");
 		else
-			wrt.print("● ");
-		wrt.flush();
+			seq.str("● ");
 	}
 
 	@Override
