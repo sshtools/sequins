@@ -1,8 +1,3 @@
-import com.sshtools.sequins.TerminalFactory;
-import com.sshtools.sequins.impl.DumbTerminalFactory;
-import com.sshtools.sequins.impl.FallbackTerminalFactory;
-import com.sshtools.sequins.impl.LinuxTerminalFactory;
-
 /**
  * Copyright © 2023 JAdaptive Limited (support@jadaptive.com)
  *
@@ -18,12 +13,26 @@ import com.sshtools.sequins.impl.LinuxTerminalFactory;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.sshtools.sequins.impl;
 
-module com.sshtools.sequins {
-	exports com.sshtools.sequins;
-	opens com.sshtools.sequins;
-	uses TerminalFactory;
-	provides TerminalFactory with DumbTerminalFactory, LinuxTerminalFactory, FallbackTerminalFactory;
-	requires java.xml;
+import com.sshtools.sequins.Terminal;
+import com.sshtools.sequins.TerminalFactory;
+
+public class DumbTerminalFactory implements TerminalFactory {
+
+	@Override
+	public int getWeight() {
+		return Integer.MAX_VALUE;
+	}
+
+	@Override
+	public Terminal create() {
+		return new DumbTerminal();
+	}
+
+	@Override
+	public boolean isAvailable() {
+		return true;
+	}
 
 }

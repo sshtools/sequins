@@ -22,7 +22,7 @@ public class FallbackTerminalFactory implements TerminalFactory {
 
 	@Override
 	public int getWeight() {
-		return Integer.MAX_VALUE;
+		return Integer.MAX_VALUE / 2;
 	}
 
 	@Override
@@ -32,7 +32,7 @@ public class FallbackTerminalFactory implements TerminalFactory {
 
 	@Override
 	public boolean isAvailable() {
-		return true;
+		return System.console() != null;
 	}
 
 }

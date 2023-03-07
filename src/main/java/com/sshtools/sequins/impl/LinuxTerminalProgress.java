@@ -16,30 +16,25 @@
 package com.sshtools.sequins.impl;
 
 import com.sshtools.sequins.Sequence;
+import com.sshtools.sequins.Terminal;
 import com.sshtools.sequins.Sequence.Color;
 
-public class LinuxTerminalProgress extends DefaultConsoleProgress {
+public class LinuxTerminalProgress extends FallbackConsoleProgress {
 
-	LinuxTerminalProgress(boolean spinner, boolean percentageText, LinuxTerminal terminal, String name, Object... args) {
-		super(terminal, spinner, percentageText, name, args);
-		super.postConstruct();
+	LinuxTerminalProgress(Terminal terminal, boolean showSpinner, boolean percentageText, String name,
+			Object... args) {
+		this(terminal, showSpinner, percentageText, new Object(), 0, name, args);
 	}
 
-
-	protected LinuxTerminalProgress(boolean spinner, boolean percentageText, LinuxTerminal terminal, Object lock, int indent, String name, Object... args) {
-		super(terminal, spinner, percentageText, lock, indent, name, args);
-		super.postConstruct();
+	protected LinuxTerminalProgress(Terminal terminal, boolean showSpinner, boolean percentageText, Object lock,
+			int indent, String name, Object... args) {
+		super(terminal, showSpinner, percentageText, new Object(), indent, name, "🕐🕐🕒🕓🕓🕓🕖🕗🕘🕙🕚🕛".codePoints().toArray(), args);
 	}
 
 
 	@Override
-	protected void postConstruct() {
-		setSpinnerChars("🕐🕐🕒🕓🕓🕓🕖🕗🕘🕙🕚🕛");
-	}
-
-	@Override
-	protected DefaultConsoleProgress createNewJob(Object lock, String name, Object... args) {
-		return new LinuxTerminalProgress(indeterminate, percentageText, (LinuxTerminal) terminal, lock, indent() + 1, name, args);
+	protected FallbackConsoleProgress createNewJob(Object lock, String name, Object... args) {
+		return new LinuxTerminalProgress((LinuxTerminal) terminal, indeterminate, percentageText, lock, indent() + 1, name, args);
 	}
 
 	@Override

@@ -120,14 +120,14 @@ public interface Terminal extends Prompter, DrawContext {
 		if (console == null) {
 			try {
 				var writer = getWriter();
-				writer.print(createSequence().msg(fmt, args).toString() + ": ");
+				writer.print(createSequence().msg(fmt, args).str(": ").toString());
 				writer.flush();
 				return new BufferedReader(new InputStreamReader(System.in)).readLine().toCharArray();
 			} catch (IOException e) {
 				return null;
 			}
 		}
-		return console.readPassword(createSequence().msg(fmt, args).toString());
+		return console.readPassword(createSequence().msg(fmt, args).str(": ").toString());
 	}
 
 	PrintWriter getWriter();

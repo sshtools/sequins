@@ -26,7 +26,7 @@ import com.sshtools.sequins.Progress;
 import com.sshtools.sequins.Sequence;
 import com.sshtools.sequins.Terminal;
 
-public class DefaultConsoleProgress implements Progress {
+public class DumbConsoleProgress implements Progress {
 
 	public class Formattable {
 		Object[] args;
@@ -66,7 +66,7 @@ public class DefaultConsoleProgress implements Progress {
 
 		boolean active = true;
 		int index;
-		boolean firstSpin;
+		boolean hadFirstSpin;
 
 		Spinner() {
 			super("ProgressSpinner");
@@ -75,40 +75,48 @@ public class DefaultConsoleProgress implements Progress {
 
 		public void run() {
 			try {
+				Thread.sleep(1000);
 				while (active) {
 					synchronized (lock) {
 						printJob();
 					}
-					firstSpin = true;
+					hadFirstSpin = true;
+					index++;
 					if (index == spinnerChars.length)
 						index = 0;
-					Thread.sleep(terminal.capabilities().contains(Capability.CURSOR_MOVEMENT) ? 100 : 5000);
+					Thread.sleep(terminal.capabilities().contains(Capability.CURSOR_MOVEMENT) ? 100 : 1000);
 				}
 			} catch (InterruptedException ie) {
 			}
 		}
 	}
 
-	static int[] SPINNER_CHARS = new int[] { '|', '/', '-', '\\', '|', '/', '-', '\\' };
+	static int[] SPINNER_CHARS = new int[] { '.' };
 
 	private int indent = 0;
-	private StringBuilder indentStr = new StringBuilder();
-	private Object lock;
-	private Formattable message;
-	private boolean newlineNeeded;
 	private Optional<Integer> percent = Optional.empty();
 	private Spinner spinner;
-	private int[] spinnerChars = SPINNER_CHARS;
 	private boolean cancelled;
 	private List<Progress> jobs = new ArrayList<>();
+	private Optional<Runnable> onClose = Optional.empty();
+	
+	protected Object lock;
+	protected Formattable message;
+	protected boolean newlineNeeded;
+	protected StringBuilder indentStr = new StringBuilder();
 
 	protected final Terminal terminal;
 	protected final boolean indeterminate;
 	protected final boolean percentageText;
+	protected final int[] spinnerChars;
 
-	DefaultConsoleProgress(Terminal terminal, boolean showSpinner, boolean percentageText, String name,
+	DumbConsoleProgress(Terminal terminal, boolean showSpinner, boolean percentageText, String name,int[] spinnerChars, 
 			Object... args) {
-		this(terminal, showSpinner, percentageText, new Object(), 0, name, args);
+		this(terminal, showSpinner, percentageText, new Object(), 0, name, spinnerChars, args);
+	}
+	
+	void setOnClose(Runnable onClose) {
+		this.onClose = Optional.of(onClose);
 	}
 
 	@Override
@@ -126,22 +134,11 @@ public class DefaultConsoleProgress implements Progress {
 		return message;
 	}
 
-	public int[] getSpinnerChars() {
-		return spinnerChars;
-	}
-
-	public void setSpinnerChars(int[] spinnerChars) {
-		this.spinnerChars = spinnerChars;
-	}
-
-	public void setSpinnerChars(String spinnerChars) {
-		this.spinnerChars = spinnerChars.codePoints().toArray();
-	}
-
-	protected DefaultConsoleProgress(Terminal terminal, boolean showSpinner, boolean percentageText, Object lock,
-			int indent, String name, Object... args) {
+	protected DumbConsoleProgress(Terminal terminal, boolean showSpinner, boolean percentageText, Object lock,
+			int indent, String name, int[] spinnerChars, Object... args) {
 		this.terminal = terminal;
 		this.lock = lock;
+		this.spinnerChars = spinnerChars;
 		this.indeterminate = showSpinner;
 		this.percentageText = percentageText;
 		this.message = name == null ? null : new Formattable(name, args);
@@ -158,7 +155,7 @@ public class DefaultConsoleProgress implements Progress {
 		startSpinner();
 	}
 
-	public int indent() {
+	public final int indent() {
 		return indent;
 	}
 
@@ -170,10 +167,7 @@ public class DefaultConsoleProgress implements Progress {
 			if (wasNlNeeded)
 				printNewline();
 		}
-		onClose();
-	}
-
-	protected void onClose() {
+		onClose.ifPresent(r -> r.run());
 	}
 
 	@Override
@@ -243,33 +237,30 @@ public class DefaultConsoleProgress implements Progress {
 		seq.str(message);
 	}
 
-	protected DefaultConsoleProgress createNewJob(Object lock, String name, Object... args) {
-		return new DefaultConsoleProgress(terminal, indeterminate, percentageText, lock, indent + 1, name, args);
+	protected DumbConsoleProgress createNewJob(Object lock, String name, Object... args) {
+		return new DumbConsoleProgress(terminal, indeterminate, percentageText, lock, indent + 1, name, spinnerChars, args);
 	}
 
-	void printJob() {
+	protected void printJob() {
 		synchronized (lock) {
 			var width = terminal.getWidth();
 			Sequence seq = null;
-			var tailSeq = terminal.createSequence();
-
-			if (!terminal.capabilities().contains(Capability.CURSOR_MOVEMENT) && spinner != null && spinner.firstSpin) {
-				printSpinner(tailSeq);
-				seq = tailSeq;
-			} else {
-
-				if (indeterminate) {
-					if (message != null) {
-						tailSeq.ch(' ');
-					}
-					printSpinner(tailSeq);
-				}
+			
+			if(newlineNeeded) {
+				seq = terminal.createSequence();
+				printSpinner(seq);
+			}
+			else {
+				var tailSeq = terminal.createSequence();
+				
 				if (percentageText) {
-					if (tailSeq.textLength() > 0)
-						tailSeq.ch(' ');
+					tailSeq.ch(' ');
 					printPercentage(null);
 				}
-
+				else if (indeterminate) {
+					printSpinner(tailSeq);
+				}
+	
 				if (message == null) {
 					seq = tailSeq;
 				} else {
@@ -281,10 +272,6 @@ public class DefaultConsoleProgress implements Progress {
 					printMessage(seq, width - tailSeq.textLength() - seq.textLength());
 					seq.seq(tailSeq);
 				}
-
-				if (terminal.capabilities().contains(Capability.CURSOR_MOVEMENT)) {
-					seq.cr();
-				}
 			}
 
 			var wrt = terminal.getWriter();
@@ -294,28 +281,28 @@ public class DefaultConsoleProgress implements Progress {
 		}
 	}
 
-	void printNewline() {
+	final void printNewline() {
 		terminal.getWriter().println();
 		stopSpinner(new ArrayList<>());
 		newlineNeeded = false;
 	}
 
-	void startSpinner() {
+	final void startSpinner() {
 		synchronized (lock) {
-			if (spinner == null && terminal.capabilities().contains(Capability.CURSOR_MOVEMENT)) {
+			if (spinner == null) {
 				spinner = new Spinner();
 				spinner.start();
 			}
 		}
 	}
 
-	boolean isSpinning() {
+	final boolean isSpinning() {
 		synchronized (lock) {
 			if (spinner != null && spinner.isAlive()) {
 				return true;
 			}
 			for (var j : jobs) {
-				if (((DefaultConsoleProgress) j).isSpinning()) {
+				if (((DumbConsoleProgress) j).isSpinning()) {
 					return true;
 				}
 			}
@@ -323,22 +310,22 @@ public class DefaultConsoleProgress implements Progress {
 		}
 	}
 
-	void interrupt(List<DefaultConsoleProgress> stopped) {
+	final void interrupt(List<DumbConsoleProgress> stopped) {
 
 		if (isSpinning()) {
 			stopSpinner(stopped);
 		}
 		for (var j : jobs) {
-			((DefaultConsoleProgress) j).interrupt(stopped);
+			((DumbConsoleProgress) j).interrupt(stopped);
 		}
 		if (newlineNeeded) {
 			printNewline();
 		}
 	}
 
-	void stopSpinner(List<DefaultConsoleProgress> stopped) {
+	final void stopSpinner(List<DumbConsoleProgress> stopped) {
 		for (var j : jobs) {
-			((DefaultConsoleProgress) j).stopSpinner(stopped);
+			((DumbConsoleProgress) j).stopSpinner(stopped);
 		}
 		synchronized (lock) {
 			if (spinner != null) {
@@ -357,7 +344,7 @@ public class DefaultConsoleProgress implements Progress {
 		}
 	}
 
-	String trimAndFillTo(String str, int size, char fillWith) {
+	final String trimAndFillTo(String str, int size, char fillWith) {
 		if (str.length() > size)
 			str = str.substring(0, size);
 		while (str.length() < size) {
@@ -367,7 +354,7 @@ public class DefaultConsoleProgress implements Progress {
 	}
 
 	@Override
-	public List<Progress> jobs() {
+	public final List<Progress> jobs() {
 		return jobs;
 	}
 

@@ -21,7 +21,6 @@ import java.lang.ProcessBuilder.Redirect;
 import java.util.StringTokenizer;
 
 import com.sshtools.sequins.Constraint;
-import com.sshtools.sequins.Progress;
 import com.sshtools.sequins.ProgressBuilder;
 import com.sshtools.sequins.Sequence;
 
@@ -33,13 +32,9 @@ public class LinuxTerminal extends FallbackTerminal {
 	private Constraint constraint = Constraint.of(80, 24);
 
 	@Override
-	public ProgressBuilder progressBuilder() {
-		return new ProgressBuilder() {
-			@Override
-			protected Progress buildImpl() {
-				return new LinuxTerminalProgress(indeterminate, percentageText, LinuxTerminal.this, message, args);
-			}
-		};
+	protected DumbConsoleProgress createProgress(ProgressBuilder builder) {
+		return new LinuxTerminalProgress(this, builder.indeterminate(), builder.percentageText(), 
+				builder.message(), builder.args());
 	}
 
 	@Override
@@ -56,26 +51,26 @@ public class LinuxTerminal extends FallbackTerminal {
 				height = Integer.parseInt(System.getenv("LINES"));
 			} catch (Exception e3) {
 			}
-			
-			if(width == -1 || height == -1) {
+
+			if (width == -1 || height == -1) {
 				try {
 					/* This is the only method that works with sudo */
 					var p = new ProcessBuilder("tput", "cols", "lines").redirectError(Redirect.INHERIT)
 							.redirectInput(Redirect.INHERIT).start();
 					try (var in = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
 						var l = Integer.parseInt(in.readLine());
-						if(width == -1)
+						if (width == -1)
 							width = l;
 						l = Integer.parseInt(in.readLine());
-						if(height == -1) {
+						if (height == -1) {
 							height = l;
-						} 
+						}
 					}
 				} catch (Exception e) {
 				}
 			}
-			
-			if(width == -1 || height == -1) {
+
+			if (width == -1 || height == -1) {
 				try {
 					var p = new ProcessBuilder("stty", "-a").redirectError(Redirect.INHERIT)
 							.redirectInput(Redirect.INHERIT).start();
@@ -94,13 +89,13 @@ public class LinuxTerminal extends FallbackTerminal {
 				} catch (Exception e2) {
 				}
 			}
-			
-			if(width == -1)
+
+			if (width == -1)
 				width = 80;
-			
-			if(height == -1)
+
+			if (height == -1)
 				height = 24;
-			
+
 			constraint = Constraint.of(width, height);
 		}
 		return constraint;
@@ -118,7 +113,7 @@ public class LinuxTerminal extends FallbackTerminal {
 
 			@Override
 			public Sequence shade(int repeat, Shade ch) {
-				switch(ch) {
+				switch (ch) {
 				case DARK_SHADE:
 					return ch(repeat, '▓');
 				case MEDIUM_SHADE:

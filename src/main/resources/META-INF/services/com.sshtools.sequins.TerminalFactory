@@ -1,2 +1,3 @@
+com.sshtools.sequins.impl.DumbTerminalFactory
 com.sshtools.sequins.impl.FallbackTerminalFactory
 com.sshtools.sequins.impl.LinuxTerminalFactory

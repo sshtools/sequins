@@ -66,5 +66,33 @@ public abstract class ProgressBuilder {
 		return b;
 	}
 
+	public boolean indeterminate() {
+		return indeterminate;
+	}
+
+	public boolean percentageText() {
+		return percentageText;
+	}
+
+	public Optional<Long> rateLimit() {
+		return rateLimit;
+	}
+
+	public boolean interruptable() {
+		return interruptable;
+	}
+
+	public boolean timing() {
+		return timing;
+	}
+
+	public String message() {
+		return message;
+	}
+
+	public Object[] args() {
+		return args;
+	}
+
 	protected abstract Progress buildImpl();
 }
