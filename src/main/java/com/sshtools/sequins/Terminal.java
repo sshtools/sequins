@@ -65,15 +65,16 @@ public interface Terminal extends Prompter, DrawContext {
 
 	default boolean yesNo(PromptContext context, String fmt, Object... args) {
 		return isYes(prompt(context, 
-						createSequence().fmt(fmt, args).str(" [").boldOn().ch('Y').boldOff().str("]es,[N]o: ").toString()), true);
+						createSequence().msg(fmt, args).str(" [").boldOn().ch('Y').boldOff().str("]es,[N]o: ").toString()), true);
 	}
+	
 	default boolean noYes() {
 		return isYes(prompt(createSequence().str("[Y]es,[").boldOn().ch('N').boldOff().str("]o: ").toString()), false);
 	}
 
 	default boolean noYes(PromptContext context, String fmt, Object... args) {
 		return isYes(prompt(context,
-						createSequence().fmt(fmt, args).str(" [Y]es,[").boldOn().ch('N').boldOff().str("]o: ").toString()), false);
+						createSequence().msg(fmt, args).str(" [Y]es,[").boldOn().ch('N').boldOff().str("]o: ").toString()), false);
 	}
 
 	default String prompt() {
@@ -100,7 +101,7 @@ public interface Terminal extends Prompter, DrawContext {
 				return null;
 			}
 		}
-		return console.readLine(createSequence().msg(fmt, args).toString(), args);
+		return console.readLine("%s", createSequence().msg(fmt, args).toString());
 	}
 
 	default char[] password() {
@@ -127,7 +128,7 @@ public interface Terminal extends Prompter, DrawContext {
 				return null;
 			}
 		}
-		return console.readPassword(createSequence().msg(fmt, args).str(": ").toString());
+		return console.readPassword("%s", createSequence().msg(fmt, args).str(": ").toString());
 	}
 
 	PrintWriter getWriter();

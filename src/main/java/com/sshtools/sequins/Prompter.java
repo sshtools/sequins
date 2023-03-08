@@ -91,7 +91,7 @@ public interface Prompter {
 	boolean noYes(String fmt, Object... args);
 
 	default boolean noYes(PromptContext context, String fmt, Object... args) {
-		return noYes(context, fmt, args);
+		return noYes(fmt, args);
 	}
 
 	default void pause() {
