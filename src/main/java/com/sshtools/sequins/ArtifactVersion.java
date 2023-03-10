@@ -8,6 +8,10 @@ import java.util.Properties;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
+/**
+ * Use the copy of this in "Jaul" project.
+ */
+@Deprecated(forRemoval = true, since = "0.0.2-SNAPSHOT")
 public class ArtifactVersion {
 
 	static Map<String, String> versions = Collections.synchronizedMap(new HashMap<>());
