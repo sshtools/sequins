@@ -15,6 +15,8 @@
  */
 package com.sshtools.sequins.impl;
 
+import java.time.Duration;
+
 import com.sshtools.sequins.Capability;
 import com.sshtools.sequins.Sequence;
 import com.sshtools.sequins.Terminal;
@@ -23,27 +25,45 @@ public class FallbackConsoleProgress extends DumbConsoleProgress {
 
 	static int[] SPINNER_CHARS = new int[] { '|', '/', '-', '\\', '|', '/', '-', '\\' };
 
-	FallbackConsoleProgress(Terminal terminal, boolean showSpinner, boolean percentageText, String name,
+	FallbackConsoleProgress(Terminal terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText, String name,
 			Object... args) {
-		this(terminal, showSpinner, percentageText, new Object(), 0, name, args);
+		this(terminal, showSpinner, spinnerStartDelay, percentageText, new Object(), 0, name, args);
 	}
 
-	protected FallbackConsoleProgress(Terminal terminal, boolean showSpinner, boolean percentageText, Object lock,
+	protected FallbackConsoleProgress(Terminal terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText, Object lock,
 			int indent, String name, int[] spinnerChars, Object... args) {
-		super(terminal, showSpinner, percentageText, lock, indent, name, spinnerChars, args);
+		super(terminal, showSpinner, spinnerStartDelay, percentageText, lock, indent, name, spinnerChars, args);
 	}
 
-	protected FallbackConsoleProgress(Terminal terminal, boolean showSpinner, boolean percentageText, Object lock,
+	protected FallbackConsoleProgress(Terminal terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText, Object lock,
 			int indent, String name, Object... args) {
-		this(terminal, showSpinner, percentageText, lock, indent, name, SPINNER_CHARS, args);
+		this(terminal, showSpinner, spinnerStartDelay, percentageText, lock, indent, name, SPINNER_CHARS, args);
 	}
 
 	protected FallbackConsoleProgress createNewJob(Object lock, String name, Object... args) {
-		return new FallbackConsoleProgress(terminal, indeterminate, percentageText, lock, indent() + 1, name, args);
+		return new FallbackConsoleProgress(terminal, indeterminate, spinnerStartDelay, percentageText, lock, indent(), name, args);
 	}
 
 	@Override
-	protected final void printJob() {
+	protected void printSpinner(Sequence seq) {
+		if (spinner == null) {
+			seq.ch(' ');
+		} else {
+			seq.msg("{0}", Character.toString(spinnerChars[spinner.index]));
+		}
+		seq.cub();
+	}
+
+	@Override
+	protected void startOfLine() {
+		var seq = terminal.createSequence();
+		seq.cr();
+		terminal.getWriter().print(seq.toString());
+		startOfLineNeeded = false;
+	}
+
+//	@Override
+	protected final void XXXXprintJob() {
 		synchronized (lock) {
 			var width = terminal.getWidth();
 			Sequence seq = null;
@@ -72,14 +92,13 @@ public class FallbackConsoleProgress extends DumbConsoleProgress {
 				printMessage(seq, width - tailSeq.textLength() - seq.textLength());
 				seq.seq(tailSeq);
 			}
-
 			if (terminal.capabilities().contains(Capability.CURSOR_MOVEMENT)) {
 				seq.cr();
 			}
 
 			var wrt = terminal.getWriter();
 			wrt.print(seq);
-			newlineNeeded = true;
+			newlineNeededForNewMessage = true;
 			wrt.flush();
 		}
 	}

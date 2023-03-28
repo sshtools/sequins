@@ -1,5 +1,6 @@
 package com.sshtools.sequins;
 
+import java.time.Duration;
 import java.util.Optional;
 
 public abstract class ProgressBuilder {
@@ -11,10 +12,18 @@ public abstract class ProgressBuilder {
 	protected boolean timing = !System.getProperty("sequins.timeProgress", "false").equals("false");
 	protected String message;
 	protected Object[] args;
-
+	protected Duration spinnerStartDelay = Duration.ofSeconds(1);
+	protected boolean hideCursor;
+	
+	
 	public ProgressBuilder withMessage(String message, Object... args) {
 		this.message = message;
 		this.args = args;
+		return this;
+	}
+
+	public ProgressBuilder withSpinnerStartDelay(Duration spinnerStartDelay) {
+		this.spinnerStartDelay = spinnerStartDelay;
 		return this;
 	}
 
@@ -24,7 +33,7 @@ public abstract class ProgressBuilder {
 	}
 
 	public ProgressBuilder withPercentageText() {
-		this.indeterminate = true;
+		this.percentageText = true;
 		return this;
 	}
 
@@ -39,6 +48,15 @@ public abstract class ProgressBuilder {
 
 	public ProgressBuilder withTiming(boolean timing) {
 		this.timing = timing;
+		return this;
+	}
+
+	public ProgressBuilder withHideCursor() {
+		return withHideCursor(true);
+	}
+
+	public ProgressBuilder withHideCursor(boolean hideCursor) {
+		this.hideCursor = hideCursor;
 		return this;
 	}
 
@@ -66,31 +84,39 @@ public abstract class ProgressBuilder {
 		return b;
 	}
 
-	public boolean indeterminate() {
+	public final boolean hideCursor() {
+		return hideCursor;
+	}
+
+	public final Duration spinnerStartDelay() {
+		return spinnerStartDelay;
+	}
+
+	public final boolean indeterminate() {
 		return indeterminate;
 	}
 
-	public boolean percentageText() {
+	public final boolean percentageText() {
 		return percentageText;
 	}
 
-	public Optional<Long> rateLimit() {
+	public final Optional<Long> rateLimit() {
 		return rateLimit;
 	}
 
-	public boolean interruptable() {
+	public final boolean interruptable() {
 		return interruptable;
 	}
 
-	public boolean timing() {
+	public final boolean timing() {
 		return timing;
 	}
 
-	public String message() {
+	public final String message() {
 		return message;
 	}
 
-	public Object[] args() {
+	public final Object[] args() {
 		return args;
 	}
 

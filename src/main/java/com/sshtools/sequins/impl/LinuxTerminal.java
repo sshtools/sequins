@@ -33,8 +33,35 @@ public class LinuxTerminal extends FallbackTerminal {
 
 	@Override
 	protected DumbConsoleProgress createProgress(ProgressBuilder builder) {
-		return new LinuxTerminalProgress(this, builder.indeterminate(), builder.percentageText(), 
-				builder.message(), builder.args());
+		if(builder.hideCursor()) {
+			System.out.println("Hiding cursor");
+			var writer = getWriter();
+			var shutdownHook = new Thread(() -> {
+				writer.print(createSequence().csi().ch('?').num(25).ch('h').toString());
+				writer.flush();
+				System.out.println("Turned cursor back on");
+			});
+			Runtime.getRuntime().addShutdownHook(shutdownHook);
+			writer.print(createSequence().csi().ch('?').num(25).ch('l').toString());
+			return doCreateProgress(builder, shutdownHook);
+		}
+		else
+			return doCreateProgress(builder, null);
+	}
+
+	private DumbConsoleProgress doCreateProgress(ProgressBuilder builder, Thread shutdownHook) {
+		var writer = getWriter();
+		return new LinuxTerminalProgress(this, builder.indeterminate(), builder.spinnerStartDelay(), builder.percentageText(), 
+				builder.message(), builder.args()) {
+			@Override
+			protected void onClosed() {
+				if(builder.hideCursor()) {
+					writer.print(createSequence().csi().ch('?').num(25).ch('h').toString());
+					writer.flush();
+					Runtime.getRuntime().removeShutdownHook(shutdownHook);
+				}
+			}
+		};
 	}
 
 	@Override
@@ -232,6 +259,11 @@ public class LinuxTerminal extends FallbackTerminal {
 			@Override
 			public Sequence eraseLine() {
 				return csi().num(2).ch('K');
+			}
+
+			@Override
+			public Sequence cub(int repeat) {
+				return noTextAdvance(() -> csi().num(repeat).ch('D'));
 			}
 		};
 	}

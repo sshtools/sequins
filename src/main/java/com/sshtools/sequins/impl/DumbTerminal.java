@@ -81,6 +81,11 @@ public class DumbTerminal implements Terminal {
 				return cr().ch(getWidth(), ' ').cr();
 			}
 
+			@Override
+			public Sequence cub(int repeat) {
+				return this;
+			}
+
 		};
 	}
 
@@ -116,7 +121,7 @@ public class DumbTerminal implements Terminal {
 			}
 		} finally {
 			synchronized (consoleProgress) {
-				runningSpinners.forEach(p -> p.startSpinner());
+				runningSpinners.forEach(p -> p.startSpinner(true));
 			}
 		}
 	}
@@ -135,7 +140,7 @@ public class DumbTerminal implements Terminal {
 	}
 
 	protected DumbConsoleProgress createProgress(ProgressBuilder builder) {
-		return new DumbConsoleProgress(DumbTerminal.this, builder.indeterminate(), builder.percentageText(),
+		return new DumbConsoleProgress(DumbTerminal.this, builder.indeterminate(), builder.spinnerStartDelay(), builder.percentageText(),
 				builder.message(), new int[] { '.' }, builder.args());
 	}
 }

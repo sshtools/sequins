@@ -15,26 +15,39 @@
  */
 package com.sshtools.sequins.impl;
 
+import java.time.Duration;
+
 import com.sshtools.sequins.Sequence;
-import com.sshtools.sequins.Terminal;
 import com.sshtools.sequins.Sequence.Color;
+import com.sshtools.sequins.Terminal;
 
 public class LinuxTerminalProgress extends FallbackConsoleProgress {
 
-	LinuxTerminalProgress(Terminal terminal, boolean showSpinner, boolean percentageText, String name,
+	LinuxTerminalProgress(Terminal terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText, String name,
 			Object... args) {
-		this(terminal, showSpinner, percentageText, new Object(), 0, name, args);
+		this(terminal, showSpinner, spinnerStartDelay, percentageText, new Object(), 0, name, args);
 	}
 
-	protected LinuxTerminalProgress(Terminal terminal, boolean showSpinner, boolean percentageText, Object lock,
+	protected LinuxTerminalProgress(Terminal terminal, boolean showSpinner, Duration spinnerStartDelay,  boolean percentageText, Object lock,
 			int indent, String name, Object... args) {
-		super(terminal, showSpinner, percentageText, new Object(), indent, name, "🕐🕐🕒🕓🕓🕓🕖🕗🕘🕙🕚🕛".codePoints().toArray(), args);
+		super(terminal, showSpinner, spinnerStartDelay, percentageText, lock, indent, name, "🕐🕐🕒🕓🕓🕓🕖🕗🕘🕙🕚🕛".codePoints().toArray(), args);
 	}
 
 
 	@Override
 	protected FallbackConsoleProgress createNewJob(Object lock, String name, Object... args) {
-		return new LinuxTerminalProgress((LinuxTerminal) terminal, indeterminate, percentageText, lock, indent() + 1, name, args);
+		return new LinuxTerminalProgress((LinuxTerminal) terminal, indeterminate, spinnerStartDelay, percentageText, lock, indent(), name, args);
+	}
+
+	@Override
+	protected void printSpinner(Sequence seq) {
+		seq.csi().ch('s');
+		if (spinner == null) {
+			seq.str(" ");
+		} else {
+			seq.msg("{0}", Character.toString(spinnerChars[spinner.index]));
+		}
+		seq.csi().ch('u');
 	}
 
 	@Override
