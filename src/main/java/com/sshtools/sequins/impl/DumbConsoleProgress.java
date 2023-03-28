@@ -197,6 +197,8 @@ public class DumbConsoleProgress implements Progress {
 					startSpinner(true);
 				printJob();
 				newlineNeededForNewMessage = true;
+				if(!indeterminate)
+					printNewline();
 			} finally {
 				this.message = null;
 			}

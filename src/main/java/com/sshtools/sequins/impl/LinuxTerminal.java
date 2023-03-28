@@ -34,12 +34,10 @@ public class LinuxTerminal extends FallbackTerminal {
 	@Override
 	protected DumbConsoleProgress createProgress(ProgressBuilder builder) {
 		if(builder.hideCursor()) {
-			System.out.println("Hiding cursor");
 			var writer = getWriter();
 			var shutdownHook = new Thread(() -> {
 				writer.print(createSequence().csi().ch('?').num(25).ch('h').toString());
 				writer.flush();
-				System.out.println("Turned cursor back on");
 			});
 			Runtime.getRuntime().addShutdownHook(shutdownHook);
 			writer.print(createSequence().csi().ch('?').num(25).ch('l').toString());
