@@ -19,7 +19,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.sshtools</groupId>
 	<artifactId>sequins</artifactId>
-	<version>0.0.2</version>
+	<version>0.0.3-SNAPSHOT</version>
 	<name>Sequins - A library for prettier console output</name>
 	<properties>
 		<maven.compiler.target>17</maven.compiler.target>
@@ -170,6 +170,7 @@
 						<serverId>ossrh-sshtools</serverId>
 						<nexusUrl>https://oss.sonatype.org/</nexusUrl>
 						<autoReleaseAfterClose>true</autoReleaseAfterClose>
+						<stagingProgressTimeoutMinutes>10</stagingProgressTimeoutMinutes>
 					</configuration>
 				</plugin>
 			</plugins>
