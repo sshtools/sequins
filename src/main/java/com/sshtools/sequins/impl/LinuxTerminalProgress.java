@@ -23,20 +23,20 @@ import com.sshtools.sequins.Terminal;
 
 public class LinuxTerminalProgress extends FallbackConsoleProgress {
 
-	LinuxTerminalProgress(Terminal terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText, String name,
+	LinuxTerminalProgress(LinuxTerminalProgress parent, Terminal terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText, String name,
 			Object... args) {
-		this(terminal, showSpinner, spinnerStartDelay, percentageText, new Object(), 0, name, args);
+		this(parent, terminal, showSpinner, spinnerStartDelay, percentageText, new Object(), 0, name, args);
 	}
 
-	protected LinuxTerminalProgress(Terminal terminal, boolean showSpinner, Duration spinnerStartDelay,  boolean percentageText, Object lock,
+	protected LinuxTerminalProgress(LinuxTerminalProgress parent, Terminal terminal, boolean showSpinner, Duration spinnerStartDelay,  boolean percentageText, Object lock,
 			int indent, String name, Object... args) {
-		super(terminal, showSpinner, spinnerStartDelay, percentageText, lock, indent, name, "🕐🕐🕒🕓🕓🕓🕖🕗🕘🕙🕚🕛".codePoints().toArray(), args);
+		super(parent, terminal, showSpinner, spinnerStartDelay, percentageText, lock, indent, name, "🕐🕐🕒🕓🕓🕓🕖🕗🕘🕙🕚🕛".codePoints().toArray(), args);
 	}
 
 
 	@Override
 	protected FallbackConsoleProgress createNewJob(Object lock, String name, Object... args) {
-		return new LinuxTerminalProgress((LinuxTerminal) terminal, indeterminate, spinnerStartDelay, percentageText, lock, indent(), name, args);
+		return new LinuxTerminalProgress(this, (LinuxTerminal) terminal, indeterminate, spinnerStartDelay, percentageText, lock, indent(), name, args);
 	}
 
 	@Override

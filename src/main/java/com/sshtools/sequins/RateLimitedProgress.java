@@ -1,6 +1,5 @@
 package com.sshtools.sequins;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -36,7 +35,7 @@ public class RateLimitedProgress implements Progress {
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		finishTask();
 		try {
 			delegate.close();
@@ -59,9 +58,37 @@ public class RateLimitedProgress implements Progress {
 	}
 
 	@Override
+	public Progress parent() {
+		return delegate.parent();
+	}
+
+	@Override
 	public Progress newJob(String name, Object... args) {
 		finishTask();
 		return new RateLimitedProgress(this, delegate.newJob(name, args));
+	}
+
+	@Override
+	public Progress newJob() {
+		finishTask();
+		return new RateLimitedProgress(this, delegate.newJob());
+	}
+
+	@Override
+	public void progressPercentage(Optional<Integer> percent) {
+		synchronized (lock) {
+			this.percent = percent;
+		}
+		doProgressed();
+	}
+
+	@Override
+	public void progressMessage(Optional<String> message, Object... args) {
+		synchronized (lock) {
+			this.message = message;
+			this.args = args;
+		}
+		doProgressed();
 	}
 
 	@Override
@@ -71,6 +98,11 @@ public class RateLimitedProgress implements Progress {
 			this.percent = percent;
 			this.args = args;
 		}
+		doProgressed();
+
+	}
+
+	private void doProgressed() {
 		if (task == null || task.isDone()) {
 			task = executor.schedule(() -> {
 				Optional<String> fmsg;
@@ -84,7 +116,6 @@ public class RateLimitedProgress implements Progress {
 				delegate.progressed(fpc, fmsg, fargs);
 			}, ms, TimeUnit.MILLISECONDS);
 		}
-
 	}
 
 	@Override

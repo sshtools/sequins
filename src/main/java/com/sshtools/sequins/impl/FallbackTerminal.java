@@ -49,11 +49,26 @@ public class FallbackTerminal extends DumbTerminal {
 			public Sequence cub(int repeat) {
 				return noTextAdvance(() -> ch(repeat, '\b'));
 			}
+
+			@Override
+			public Sequence cuu(int repeat) {
+				return this;
+			}
+
+			@Override
+			public Sequence cud(int repeat) {
+				return this;
+			}
+
+			@Override
+			public Sequence cuf(int repeat) {
+				return this;
+			}
 		};
 	}
 	
 	protected DumbConsoleProgress createProgress(ProgressBuilder builder) {
-		return new FallbackConsoleProgress(this, builder.indeterminate(), builder.spinnerStartDelay(), builder.percentageText(),
+		return new FallbackConsoleProgress(null, this, builder.indeterminate(), builder.spinnerStartDelay(), builder.percentageText(),
 				builder.message(), builder.args());
 	}
 

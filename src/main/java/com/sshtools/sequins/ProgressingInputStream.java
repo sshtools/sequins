@@ -38,7 +38,7 @@ public class ProgressingInputStream extends FilterInputStream {
 		bytes += amount;
 		if(progress.isCancelled())
 			throw new IOException("Cancelled.");
-		progress.progressed((int) ((((double) bytes) / (double) length) * (double) 100));
+		progress.progressPercentage((int) ((((double) bytes) / (double) length) * (double) 100));
 	}
 
 }

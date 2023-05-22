@@ -1,6 +1,5 @@
 package com.sshtools.sequins;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,7 +14,7 @@ public class TimedProgress implements Progress {
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		try {
 			var now = System.currentTimeMillis();
 			message(Level.INFO, "Task took {0}s", String.format("%f", (double)(now - started) / 1000.0d));
@@ -42,6 +41,16 @@ public class TimedProgress implements Progress {
 	}
 
 	@Override
+	public Progress newJob() {
+		return delegate.newJob();
+	}
+
+	@Override
+	public Progress parent() {
+		return delegate.parent();
+	}
+
+	@Override
 	public void progressed(Optional<Integer> percent, Optional<String> message, Object... args) {
 		delegate.progressed(percent, message, args);
 	}
@@ -55,4 +64,14 @@ public class TimedProgress implements Progress {
 		return new TimedProgress(delegate);
 	}
 
+	@Override
+	public void progressPercentage(Optional<Integer> percent) {
+		delegate.progressPercentage(percent);
+		
+	}
+
+	@Override
+	public void progressMessage(Optional<String> message, Object... args) {
+		delegate.progressMessage(message, args);
+	}
 }

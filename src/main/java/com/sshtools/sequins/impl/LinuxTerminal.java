@@ -49,7 +49,7 @@ public class LinuxTerminal extends FallbackTerminal {
 
 	private DumbConsoleProgress doCreateProgress(ProgressBuilder builder, Thread shutdownHook) {
 		var writer = getWriter();
-		return new LinuxTerminalProgress(this, builder.indeterminate(), builder.spinnerStartDelay(), builder.percentageText(), 
+		return new LinuxTerminalProgress(null, this, builder.indeterminate(), builder.spinnerStartDelay(), builder.percentageText(), 
 				builder.message(), builder.args()) {
 			@Override
 			protected void onClosed() {
@@ -262,6 +262,21 @@ public class LinuxTerminal extends FallbackTerminal {
 			@Override
 			public Sequence cub(int repeat) {
 				return noTextAdvance(() -> csi().num(repeat).ch('D'));
+			}
+
+			@Override
+			public Sequence cuu(int repeat) {
+				return noTextAdvance(() -> csi().num(repeat).ch('A'));
+			}
+
+			@Override
+			public Sequence cud(int repeat) {
+				return noTextAdvance(() -> csi().num(repeat).ch('B'));
+			}
+
+			@Override
+			public Sequence cuf(int repeat) {
+				return noTextAdvance(() -> csi().num(repeat).ch('C'));
 			}
 		};
 	}

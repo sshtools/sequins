@@ -40,6 +40,21 @@ public abstract class Sequence {
 		public Sequence cub(int repeat) {
 			throw new UnsupportedOperationException();
 		}
+
+		@Override
+		public Sequence cuf(int repeat) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public Sequence cuu(int repeat) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public Sequence cud(int repeat) {
+			throw new UnsupportedOperationException();
+		}
 		
 	};
 	
@@ -299,6 +314,24 @@ public abstract class Sequence {
 	public abstract Sequence eraseLine();
 
 	public abstract Sequence cub(int repeat);
+
+	public final Sequence cuu() {
+		return cuu(1);
+	}
+
+	public abstract Sequence cuu(int repeat);
+
+	public final Sequence cud() {
+		return cud(1);
+	}
+
+	public abstract Sequence cud(int repeat);
+
+	public final Sequence cuf() {
+		return cuf(1);
+	}
+
+	public abstract Sequence cuf(int repeat);
 
 	public final Sequence cub() {
 		return cub(1);

@@ -86,6 +86,21 @@ public class DumbTerminal implements Terminal {
 				return this;
 			}
 
+			@Override
+			public Sequence cuu(int repeat) {
+				return this;
+			}
+
+			@Override
+			public Sequence cud(int repeat) {
+				return this;
+			}
+
+			@Override
+			public Sequence cuf(int repeat) {
+				return this;
+			}
+
 		};
 	}
 
@@ -140,7 +155,7 @@ public class DumbTerminal implements Terminal {
 	}
 
 	protected DumbConsoleProgress createProgress(ProgressBuilder builder) {
-		return new DumbConsoleProgress(DumbTerminal.this, builder.indeterminate(), builder.spinnerStartDelay(), builder.percentageText(),
+		return new DumbConsoleProgress(null, DumbTerminal.this, builder.indeterminate(), builder.spinnerStartDelay(), builder.percentageText(),
 				builder.message(), new int[] { '.' }, builder.args());
 	}
 }

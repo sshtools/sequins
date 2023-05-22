@@ -1,6 +1,5 @@
 package com.sshtools.sequins;
 
-import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,18 +27,43 @@ public class InterruptableProgress implements Progress {
 	}
 
 	@Override
-	public void close() throws IOException {
+	public Progress parent() {
+		return delegate.parent();
+	}
+
+	@Override
+	public Progress newJob() {
+		return delegate.newJob();
+	}
+
+	@Override
+	public void close() {
 		delegate.close();
 	}
 
 	@Override
-	public void progressed(int percent) {
-		delegate.progressed(percent);
+	public void progressPercentage(int percent) {
+		delegate.progressPercentage(percent);
 	}
 
 	@Override
-	public void progressed(String message, Object... args) {
-		delegate.progressed(message, args);
+	public void progressed(int percent, String message, Object... args) {
+		delegate.progressed(percent, message, args);
+	}
+
+	@Override
+	public void progressMessage(String message, Object... args) {
+		delegate.progressMessage(message, args);
+	}
+
+	@Override
+	public void progressPercentage(Optional<Integer> percent) {
+		delegate.progressPercentage(percent);		
+	}
+
+	@Override
+	public void progressMessage(Optional<String> message, Object... args) {
+		delegate.progressMessage(message, args);		
 	}
 
 	@Override

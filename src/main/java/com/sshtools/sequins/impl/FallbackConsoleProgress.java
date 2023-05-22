@@ -25,23 +25,23 @@ public class FallbackConsoleProgress extends DumbConsoleProgress {
 
 	static int[] SPINNER_CHARS = new int[] { '|', '/', '-', '\\', '|', '/', '-', '\\' };
 
-	FallbackConsoleProgress(Terminal terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText, String name,
+	FallbackConsoleProgress(FallbackConsoleProgress parent, Terminal terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText, String name,
 			Object... args) {
-		this(terminal, showSpinner, spinnerStartDelay, percentageText, new Object(), 0, name, args);
+		this(parent, terminal, showSpinner, spinnerStartDelay, percentageText, new Object(), 0, name, args);
 	}
 
-	protected FallbackConsoleProgress(Terminal terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText, Object lock,
+	protected FallbackConsoleProgress(FallbackConsoleProgress parent, Terminal terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText, Object lock,
 			int indent, String name, int[] spinnerChars, Object... args) {
-		super(terminal, showSpinner, spinnerStartDelay, percentageText, lock, indent, name, spinnerChars, args);
+		super(parent, terminal, showSpinner, spinnerStartDelay, percentageText, lock, indent, name, spinnerChars, args);
 	}
 
-	protected FallbackConsoleProgress(Terminal terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText, Object lock,
+	protected FallbackConsoleProgress(FallbackConsoleProgress parent, Terminal terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText, Object lock,
 			int indent, String name, Object... args) {
-		this(terminal, showSpinner, spinnerStartDelay, percentageText, lock, indent, name, SPINNER_CHARS, args);
+		this(parent, terminal, showSpinner, spinnerStartDelay, percentageText, lock, indent, name, SPINNER_CHARS, args);
 	}
 
 	protected FallbackConsoleProgress createNewJob(Object lock, String name, Object... args) {
-		return new FallbackConsoleProgress(terminal, indeterminate, spinnerStartDelay, percentageText, lock, indent(), name, args);
+		return new FallbackConsoleProgress(this, terminal, indeterminate, spinnerStartDelay, percentageText, lock, indent(), name, args);
 	}
 
 	@Override
