@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.sshtools.sequins.Capability;
 import com.sshtools.sequins.Progress;
@@ -100,7 +101,7 @@ public class DumbConsoleProgress implements Progress {
 	private int indent = 0;
 	private Optional<Integer> percent = Optional.empty();
 	private boolean cancelled;
-	private List<Progress> jobs = new ArrayList<>();
+	private List<Progress> jobs = new CopyOnWriteArrayList<>();
 	private Optional<Runnable> onClose = Optional.empty();
 
 	protected Duration spinnerStartDelay = Duration.ofSeconds(1);
