@@ -2,7 +2,7 @@
 
 A library to help make line based console output in Java applications a bit prettier.
 
-This is used in several [JADAPTIVE](https://jadaptive.com) applications such as a [Push SFTP](https://github.com/sshtools/push-sftp).
+This is used in several [JADAPTIVE](https://jadaptive.com) applications such as [Push SFTP](https://github.com/sshtools/push-sftp).
 
 ## Get Sequins
 
