@@ -15,28 +15,13 @@
  */
 package com.sshtools.sequins;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.ServiceLoader;
-import java.util.Set;
 
 public interface Terminal extends Prompter, DrawContext {
 	
+	@Deprecated
 	static Terminal create() {
-		var l = new ArrayList<TerminalFactory>();
-		for(var srv : ServiceLoader.load(TerminalFactory.class)) {
-			if(srv.isAvailable()) {
-				l.add(srv);
-			}
-		}
-		Collections.sort(l, (a, b) -> Integer.valueOf(a.getWeight()).compareTo(b.getWeight()));
-		if(l.isEmpty())
-			throw new IllegalStateException("No providers.");
-		return l.get(0).create();
+		return Sequins.create();
 	}
 	
 	static boolean isYes(String str, boolean defaultIfNull) {
@@ -77,59 +62,13 @@ public interface Terminal extends Prompter, DrawContext {
 						createSequence().msg(fmt, args).str(" [Y]es,[").boldOn().ch('N').boldOff().str("]o: ").toString()), false);
 	}
 
-	default String prompt() {
-		var console = System.console();
-		if (console == null) {
-			try {
-				return new BufferedReader(new InputStreamReader(System.in)).readLine();
-			} catch (IOException e) {
-				return null;
-			}
-		}
-		return console.readLine();
-	}
+	String prompt();
 
-	default String prompt(PromptContext context, String fmt, Object... args) {
-		var console = System.console();
-		if (console == null) {
-			try {
-				var writer = getWriter();
-				writer.print(createSequence().msg(fmt, args).toString());
-				writer.flush();
-				return new BufferedReader(new InputStreamReader(System.in)).readLine();
-			} catch (IOException e) {
-				return null;
-			}
-		}
-		return console.readLine("%s", createSequence().msg(fmt, args).toString());
-	}
+	String prompt(PromptContext context, String fmt, Object... args);
 
-	default char[] password() {
-		var console = System.console();
-		if (console == null) {
-			try {
-				return new BufferedReader(new InputStreamReader(System.in)).readLine().toCharArray();
-			} catch (IOException e) {
-				return null;
-			}
-		}
-		return console.readPassword();
-	}
+	char[] password();
 
-	default char[] password(PromptContext context, String fmt, Object... args) {
-		var console = System.console();
-		if (console == null) {
-			try {
-				var writer = getWriter();
-				writer.print(createSequence().msg(fmt, args).str(": ").toString());
-				writer.flush();
-				return new BufferedReader(new InputStreamReader(System.in)).readLine().toCharArray();
-			} catch (IOException e) {
-				return null;
-			}
-		}
-		return console.readPassword("%s", createSequence().msg(fmt, args).str(": ").toString());
-	}
+	char[] password(PromptContext context, String fmt, Object... args);
 
 	PrintWriter getWriter();
 
@@ -139,6 +78,34 @@ public interface Terminal extends Prompter, DrawContext {
 
 	ProgressBuilder progressBuilder();
 	
+	default Terminal print(String text) {
+		var wrt = getWriter();
+		wrt.print(text);
+		wrt.flush();
+		return this;
+	}
+	
+	default Terminal println() {
+		var wrt = getWriter();
+		wrt.println();
+		wrt.flush();
+		return this;
+	}
+	
+	default Terminal println(String text) {
+		var wrt = getWriter();
+		wrt.println(text);
+		wrt.flush();
+		return this;
+	}
+	
+	default Terminal newline() {
+		var wrt = getWriter();
+		wrt.println();
+		wrt.flush();
+		return this;
+	}
+	
 	default Terminal message(String message, Object... args) {
 		var seq = createSequence();
 		seq.msg(message, args);
@@ -146,10 +113,6 @@ public interface Terminal extends Prompter, DrawContext {
 		wrt.print(seq);
 		wrt.flush();
 		return this;
-	}
-	
-	default Set<Capability> capabilities() {
-		return Collections.emptySet();
 	}
 	
 	default Terminal messageln(String message, Object... args) {

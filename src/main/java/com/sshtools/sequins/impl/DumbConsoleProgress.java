@@ -23,10 +23,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.sshtools.sequins.Capability;
+import org.jline.utils.InfoCmp.Capability;
+
 import com.sshtools.sequins.Progress;
 import com.sshtools.sequins.Sequence;
-import com.sshtools.sequins.Terminal;
+import com.sshtools.sequins.Sequence.Color;
+import com.sshtools.sequins.Sequins;
 
 public class DumbConsoleProgress implements Progress {
 
@@ -89,7 +91,7 @@ public class DumbConsoleProgress implements Progress {
 					index++;
 					if (index == spinnerChars.length)
 						index = 0;
-					Thread.sleep(terminal.capabilities().contains(Capability.CURSOR_MOVEMENT) ? 100 : 1000);
+					Thread.sleep(terminal.terminal().getBooleanCapability(Capability.cursor_address) ? 100 : 1000);
 				}
 			} catch (InterruptedException ie) {
 			}
@@ -113,12 +115,12 @@ public class DumbConsoleProgress implements Progress {
 	protected boolean startOfLineNeeded;
 	protected Spinner spinner;
 
-	protected final Terminal terminal;
+	protected final Sequins terminal;
 	protected final boolean indeterminate;
 	protected final boolean percentageText;
 	protected final int[] spinnerChars;
 
-	DumbConsoleProgress(Terminal terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText,
+	DumbConsoleProgress(Sequins terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText,
 			String name, int[] spinnerChars, Object... args) {
 		this(terminal, showSpinner, spinnerStartDelay, percentageText, new Object(), 0, name, spinnerChars, args);
 	}
@@ -142,7 +144,7 @@ public class DumbConsoleProgress implements Progress {
 		return message;
 	}
 
-	protected DumbConsoleProgress(Terminal terminal, boolean indeterminate, Duration spinnerStartDelay,
+	protected DumbConsoleProgress(Sequins terminal, boolean indeterminate, Duration spinnerStartDelay,
 			boolean percentageText, Object lock, int indent, String name, int[] spinnerChars, Object... args) {
 		this.terminal = terminal;
 		this.lock = lock;
@@ -281,7 +283,39 @@ public class DumbConsoleProgress implements Progress {
 	}
 
 	protected void printMessage(Sequence seq, int availableWidth) {
-		seq.str(message);
+		switch(message().level().orElse(Level.NORMAL)) {
+		case ERROR:
+			seq.fg(Color.RED);
+			break;
+		case WARNING:
+			seq.fg(Color.BRIGHT_YELLOW);
+			break;
+		case INFO:
+			seq.fg(Color.BRIGHT_BLUE);
+			break;
+		case VERBOSE:
+			seq.boldOn();
+			break;
+		default:
+			break;
+		}
+		seq.msg(message().pattern(), message().args());
+		switch(message().level().orElse(Level.NORMAL)) {
+		case ERROR:
+			seq.defaultFg();
+			break;
+		case WARNING:
+			seq.defaultFg();
+			break;
+		case INFO:
+			seq.defaultFg();
+			break;
+		case VERBOSE:
+			seq.boldOff();
+			break;
+		default:
+			break;
+		}
 	}
 
 	protected DumbConsoleProgress createNewJob(Object lock, String name, Object... args) {

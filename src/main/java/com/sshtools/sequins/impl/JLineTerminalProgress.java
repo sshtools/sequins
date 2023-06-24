@@ -19,24 +19,24 @@ import java.time.Duration;
 
 import com.sshtools.sequins.Sequence;
 import com.sshtools.sequins.Sequence.Color;
-import com.sshtools.sequins.Terminal;
+import com.sshtools.sequins.Sequins;
 
-public class LinuxTerminalProgress extends FallbackConsoleProgress {
+public class JLineTerminalProgress extends DumbConsoleProgress {
 
-	LinuxTerminalProgress(Terminal terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText, String name,
+	JLineTerminalProgress(Sequins terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText, String name,
 			Object... args) {
 		this(terminal, showSpinner, spinnerStartDelay, percentageText, new Object(), 0, name, args);
 	}
 
-	protected LinuxTerminalProgress(Terminal terminal, boolean showSpinner, Duration spinnerStartDelay,  boolean percentageText, Object lock,
+	protected JLineTerminalProgress(Sequins terminal, boolean showSpinner, Duration spinnerStartDelay,  boolean percentageText, Object lock,
 			int indent, String name, Object... args) {
 		super(terminal, showSpinner, spinnerStartDelay, percentageText, lock, indent, name, "🕐🕐🕒🕓🕓🕓🕖🕗🕘🕙🕚🕛".codePoints().toArray(), args);
 	}
 
 
 	@Override
-	protected FallbackConsoleProgress createNewJob(Object lock, String name, Object... args) {
-		return new LinuxTerminalProgress((LinuxTerminal) terminal, indeterminate, spinnerStartDelay, percentageText, lock, indent(), name, args);
+	protected JLineTerminalProgress createNewJob(Object lock, String name, Object... args) {
+		return new JLineTerminalProgress((JLineTerminal) terminal, indeterminate, spinnerStartDelay, percentageText, lock, indent(), name, args);
 	}
 
 	@Override
@@ -59,40 +59,11 @@ public class LinuxTerminalProgress extends FallbackConsoleProgress {
 	}
 
 	@Override
-	protected void printMessage(Sequence seq, int availableWidth) {
-		switch(message().level().orElse(Level.NORMAL)) {
-		case ERROR:
-			seq.fg(Color.RED);
-			break;
-		case WARNING:
-			seq.fg(Color.BRIGHT_YELLOW);
-			break;
-		case INFO:
-			seq.fg(Color.BRIGHT_BLUE);
-			break;
-		case VERBOSE:
-			seq.boldOn();
-			break;
-		default:
-			break;
-		}
-		seq.msg(message().pattern(), message().args());
-		switch(message().level().orElse(Level.NORMAL)) {
-		case ERROR:
-			seq.defaultFg();
-			break;
-		case WARNING:
-			seq.defaultFg();
-			break;
-		case INFO:
-			seq.defaultFg();
-			break;
-		case VERBOSE:
-			seq.boldOff();
-			break;
-		default:
-			break;
-		}
+	protected void startOfLine() {
+		var seq = terminal.createSequence();
+		seq.cr();
+		terminal.print(seq.toString());
+		startOfLineNeeded = false;
 	}
-
+	
 }

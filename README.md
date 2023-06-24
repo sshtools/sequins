@@ -1,8 +1,7 @@
 # Sequins
 
-A library to help make line based console output in Java applications a bit prettier.
-
-This is used in several [JADAPTIVE](https://jadaptive.com) applications such as [Push SFTP](https://github.com/sshtools/push-sftp).
+Some extensions and helpers used to augment [JLine3](https://github.com/jline/jline3), as used in
+several [JADAPTIVE](https://jadaptive.com) command line applications such as [Push SFTP](https://github.com/sshtools/push-sftp).
 
 ## Get Sequins
 
@@ -12,7 +11,7 @@ It is available in Maven Central.
 <dependency>
    <groupId>com.sshtools</groupId>
    <artifactId>sequins</artifactId>
-   <version>0.0.2</version>
+   <version>0.0.4</version>
 </dependency>
 ```
 
@@ -20,11 +19,8 @@ It is available in Maven Central.
 
  * Nested progress output with animated spinners
  * Simple prompting (passwords, yes/no, text)
- * Style text with colors, bold, italic, underline and more
+ * Highlights `MessageFormat.format()` and `String.format()` arguments.
  * Draw tables with box drawing characters
- * Query terminal size
- * Basic fallback output (e.g. unsupported platforms, when no tty is availabe such as Eclipse IDE)
- * Zero runtime dependencies
 
 ## Anti-features
 
@@ -32,16 +28,15 @@ It is available in Maven Central.
 
 ## TODO
 
- * Unbuffered input support (like jline)
- * Better Windows support (cmd.exe, cygwin and terminal)
  * Tests
+ * More Widgets
 
 ## Examples
 
 ### HelloWorld
 
 ```java
-	Terminal.create().messageln("Hello World");
+	Sequins.create().messageln("Hello World");
 ```
 
 ### HelloWorld Formatting
@@ -50,9 +45,9 @@ The formatter arguments will be bolded.
 
 ```java
 
-		var terminal = Terminal.create();
-		var rnd = new Random();
-		terminal.messageln("Hello World, its {0} degrees outside today, with a {1}% chance of rain.", rnd.nextInt(-10, 50), rnd.nextInt(0, 100));
+var terminal = Sequins.create();
+var rnd = new Random();
+terminal.messageln("Hello World, its {0} degrees outside today, with a {1}% chance of rain.", rnd.nextInt(-10, 50), rnd.nextInt(0, 100));
 ```
 
 ### Errors
@@ -60,7 +55,7 @@ The formatter arguments will be bolded.
 Will output on `System.err` instead of `System.out`.
 
 ```java
-var terminal = Terminal.create();
+var terminal = Sequins.create();
 try {
 	throw new Exception("Bang!");
 }
@@ -75,7 +70,7 @@ catch(Exception e) {
 Prompt for text, passwords, confirmation.
 
 ```java
-var terminal = Terminal.create();
+var terminal = Sequins.create();
 var name = terminal.prompt("what is your name?");
 var age = terminal.prompt("Hello {0}, what is you age?", name);
 if(terminal.yesNo("Are you sure {0}, age {1}.", name, age)) {
@@ -89,7 +84,7 @@ if(terminal.yesNo("Are you sure {0}, age {1}.", name, age)) {
 With a sequence you can create a string of formatted and styled text, using background and foreground colours and text styles such as italic, bold, and underline.
 
 ```java
-var terminal = Terminal.create();
+var terminal = Sequins.create();
 var seq = terminal.createSequence();
 		
 var encoded = seq.str("With a ").boldOn().str("sequence").boldOff().
@@ -111,7 +106,7 @@ wrt.flush();
 Intended for long running tasks, where output might be line by line, or animated progress. Progress can be nested too (with the output of each nested level being indented further).
 
 ```java
-var terminal = Terminal.create();
+var terminal = Sequins.create();
 bldr = terminal.progressBuilder();
 bldr.withIndeterminate();
 bldr.withHideCursor();

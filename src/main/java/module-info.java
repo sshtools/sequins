@@ -1,8 +1,3 @@
-import com.sshtools.sequins.TerminalFactory;
-import com.sshtools.sequins.impl.DumbTerminalFactory;
-import com.sshtools.sequins.impl.FallbackTerminalFactory;
-import com.sshtools.sequins.impl.LinuxTerminalFactory;
-
 /**
  * Copyright © 2023 JAdaptive Limited (support@jadaptive.com)
  *
@@ -22,8 +17,9 @@ import com.sshtools.sequins.impl.LinuxTerminalFactory;
 module com.sshtools.sequins {
 	exports com.sshtools.sequins;
 	opens com.sshtools.sequins;
-	uses TerminalFactory;
-	provides TerminalFactory with DumbTerminalFactory, LinuxTerminalFactory, FallbackTerminalFactory;
+	requires transitive org.jline.terminal;
+	requires transitive org.jline.nativ;
+	requires org.jline.reader;
 	requires java.xml;
 
 }

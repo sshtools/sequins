@@ -49,6 +49,10 @@ public interface Progress extends Closeable {
 	
 	List<Progress> jobs();
 
+	default Progress newJob() {
+		return newJob(null);
+	}
+
 	Progress newJob(String name, Object... args);
 
 	default void progressed(int percent) {
@@ -57,6 +61,10 @@ public interface Progress extends Closeable {
 
 	default void progressed(String message, Object... args) {
 		progressed(Optional.empty(), Optional.of(message), args);
+	}
+
+	default void progressed(int percent, String message, Object... args) {
+		progressed(Optional.of(percent), Optional.of(message), args);
 	}
 
 	void progressed(Optional<Integer> percent, Optional<String> message, Object... args);

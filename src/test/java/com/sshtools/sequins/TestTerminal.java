@@ -1,5 +1,7 @@
 package com.sshtools.sequins;
 
+import static org.junit.Assume.assumeTrue;
+
 import java.util.Random;
 
 import org.junit.Test;
@@ -10,14 +12,14 @@ public class TestTerminal {
 
 	@Test
 	public void testHelloWorld() {
-		Terminal.create().messageln("Hello World");
+		Sequins.create().messageln("Hello World");
 		
 		// TODO assert
 	}
 	
 	@Test
 	public void testFormatter() {
-		var terminal = Terminal.create();
+		var terminal = Sequins.create();
 		var rnd = new Random();
 		terminal.messageln("Hello World, its {0} degrees outside today, with a {1}% chance of rain.", rnd.nextInt(-10, 50), rnd.nextInt(0, 100));
 		
@@ -26,7 +28,7 @@ public class TestTerminal {
 	
 	@Test
 	public void testErrors() {
-		var terminal = Terminal.create();
+		var terminal = Sequins.create();
 		try {
 			throw new Exception("Bang!");
 		}
@@ -39,8 +41,8 @@ public class TestTerminal {
 	
 	@Test
 	public void testPrompt() {
-
-		var terminal = Terminal.create();
+		assumeTrue(System.console() != null);
+		var terminal = Sequins.create();
 		var name = terminal.prompt("what is your name?");
 		var age = terminal.prompt("Hello {0}, what is you age?", name);
 		if(terminal.yesNo("Are you sure {0}, age {1}.", name, age)) {
@@ -53,7 +55,7 @@ public class TestTerminal {
 	@Test
 	public void testSequence() {
 
-		var terminal = Terminal.create();
+		var terminal = Sequins.create();
 		var seq = terminal.createSequence();
 		var encoded = seq.str("With a ").boldOn().str("sequence").boldOff().
 			str(" you can create a string of formatted and styled text, ").

@@ -15,51 +15,22 @@
  */
 package com.sshtools.sequins.impl;
 
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Callable;
 
-import com.sshtools.sequins.Capability;
 import com.sshtools.sequins.Constraint;
 import com.sshtools.sequins.Progress;
 import com.sshtools.sequins.ProgressBuilder;
 import com.sshtools.sequins.Sequence;
 import com.sshtools.sequins.Terminal;
 
-public class DumbTerminal implements Terminal {
-	private final PrintWriter writer;
-	private final PrintWriter errWriter;
+public abstract class AbstractTerminal implements Terminal {
 
 	private final List<DumbConsoleProgress> consoleProgress = Collections.synchronizedList(new ArrayList<>());
 
-	public DumbTerminal() {
-		writer = new PrintWriter(System.out, true);
-		errWriter = new PrintWriter(System.err, true);
-	}
-
-
-	@Override
-	public final Set<Capability> capabilities() {
-		var caps = new LinkedHashSet<Capability>();
-		buildCaps(caps);
-		return caps;
-	}
-	
-	protected void buildCaps(Set<Capability> caps) {
-	}
-
-	@Override
-	public final PrintWriter getWriter() {
-		return writer;
-	}
-
-	@Override
-	public final PrintWriter getErrorWriter() {
-		return errWriter;
+	public AbstractTerminal() {
 	}
 
 	@Override
@@ -87,21 +58,6 @@ public class DumbTerminal implements Terminal {
 			}
 
 		};
-	}
-
-	@Override
-	public final String prompt(String fmt, Object... args) {
-		return interruptSpinner(() -> Terminal.super.prompt(fmt, args));
-	}
-
-	@Override
-	public final String prompt(PromptContext context, String fmt, Object... args) {
-		return interruptSpinner(() -> Terminal.super.prompt(context, fmt, args));
-	}
-
-	@Override
-	public final char[] password(PromptContext context, String fmt, Object... args) {
-		return interruptSpinner(() -> Terminal.super.password(context, fmt, args));
 	}
 
 	protected <T> T interruptSpinner(Callable<T> task) {
@@ -139,8 +95,5 @@ public class DumbTerminal implements Terminal {
 		};
 	}
 
-	protected DumbConsoleProgress createProgress(ProgressBuilder builder) {
-		return new DumbConsoleProgress(DumbTerminal.this, builder.indeterminate(), builder.spinnerStartDelay(), builder.percentageText(),
-				builder.message(), new int[] { '.' }, builder.args());
-	}
+	protected abstract DumbConsoleProgress createProgress(ProgressBuilder builder);
 }

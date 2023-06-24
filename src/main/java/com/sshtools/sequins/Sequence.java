@@ -15,12 +15,12 @@
  */
 package com.sshtools.sequins;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.nio.CharBuffer;
 import java.text.MessageFormat;
-import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
+
+import org.jline.utils.AttributedStringBuilder;
+import org.jline.utils.AttributedStyle;
 
 public abstract class Sequence {
 	
@@ -101,38 +101,22 @@ public abstract class Sequence {
 	public static final char SO = 0x0e;
 	public static final char SI = 0x0f;
 
-	private PrintWriter writer;
-	private StringWriter buffer;
-	private int textLength;
+//	private PrintWriter writer;
+//	private int textLength;
 	private int maxTextLength = Integer.MAX_VALUE;
 	private final boolean readOnly;
-	private boolean textAdvance = true;
+	protected AttributedStringBuilder buffer;
 
 	Sequence(boolean readOnly) {
 		this.readOnly = readOnly;
 		if(!readOnly) {
-			buffer = new StringWriter();
-			this.writer = new PrintWriter(buffer, true);
+			buffer = new AttributedStringBuilder();
+//			this.writer = new PrintWriter(buffer, true);
 		}
 	}
 
 	public Sequence() {
 		this(false);
-	}
-	
-	public Sequence noTextAdvance(Callable<Sequence> callable) {
-		var was = textAdvance;
-		textAdvance = false;
-		try {
-			return callable.call();
-		} catch(RuntimeException re) {
-			throw re;
-		} catch (Exception e) {
-			throw new IllegalStateException("Failed.", e);
-		}
-		finally {
-			textAdvance = was;
-		}
 	}
 	
 	public int maxTextLength() {
@@ -145,33 +129,30 @@ public abstract class Sequence {
 	}
 
 	public int textLength() {
-		return textLength;
+		return buffer.length();
 	}
 
 	public abstract Sequence newSeq();
 
 	public final Sequence seq(Sequence seq) {
-		if(textAdvance) {
-			textLength += seq.textLength;
-		}
-		noTextAdvance(() -> str(1, seq.toString()));
+		buffer.append(seq.buffer);
 		return this;
 	}
 
 	public final Sequence esc() {
-		return noTextAdvance(() -> ch(ESC));
+		return ch(ESC);
 	}
 
 	public final Sequence sep() {
-		return noTextAdvance(() -> ch(';'));
+		return ch(';');
 	}
 
 	public final Sequence csi() {
-		return noTextAdvance(() -> ch(ESC).ch('['));
+		return ch(ESC).ch('[');
 	}
 
 	public final Sequence apc() {
-		return noTextAdvance(() -> ch(ESC).ch('_'));
+		return ch(ESC).ch('_');
 	}
 
 	public final Sequence b(byte character) {
@@ -183,15 +164,12 @@ public abstract class Sequence {
 		if(readOnly)
 			throw new IllegalStateException("Read only.");
 		
-		if(textAdvance) {
-			if(textLength + repeat > maxTextLength) {
-				repeat = maxTextLength - textLength;
-			}
-			textLength += repeat;
+		if(textLength() + repeat > maxTextLength) {
+			repeat = maxTextLength - textLength();
 		}
 		
 		for(int i = 0 ; i < repeat; i++)
-			writer.print((char) (character & 0xff));
+			buffer.append((char) (character & 0xff));
 		return this;
 		
 	}
@@ -205,14 +183,12 @@ public abstract class Sequence {
 		if(readOnly)
 			throw new IllegalStateException("Read only.");
 		
-		if(textAdvance) {
-			if(textLength + repeat > maxTextLength) {
-				repeat = maxTextLength - textLength;
-			}
-			textLength += repeat;
+		if(textLength() + repeat > maxTextLength) {
+			repeat = maxTextLength - textLength();
 		}
+		
 		for(int i = 0 ; i < repeat; i++)
-			writer.print(character);
+			buffer.appendAnsi(Character.toString(character));
 
 		return this;
 	}
@@ -253,21 +229,36 @@ public abstract class Sequence {
 		var str = String.valueOf(string);
 		for(int i = 0 ; i < repeat; i++) {
 			var len = str.length();
-			try {
-				if(textAdvance && textLength + len > maxTextLength) {
-					len = maxTextLength - textLength;
-					str = str.substring(0, len);
-					writer.print(str);
-					break;
-				}
-				else
-					writer.print(str);
+			if(textLength() + len > maxTextLength) {
+				len = maxTextLength - textLength();
+				str = str.substring(0, len);
+				buffer.append(str);
+				break;
 			}
-			finally {
-				if(textAdvance)
-					textLength += len;
-				
+			else
+				buffer.append(str);
+		}
+
+		
+		return this;
+	}
+
+	public final Sequence rawStr(int repeat, Object string) {
+		
+		if(readOnly)
+			throw new IllegalStateException("Read only.");
+		
+		var str = String.valueOf(string);
+		for(int i = 0 ; i < repeat; i++) {
+			var len = str.length();
+			if(textLength() + len > maxTextLength) {
+				len = maxTextLength - textLength();
+				str = str.substring(0, len);
+				buffer.appendAnsi(str);
+				break;
 			}
+			else
+				buffer.appendAnsi(str);
 		}
 
 		
@@ -282,18 +273,17 @@ public abstract class Sequence {
 		var str = String.valueOf(string);
 		if(str.length() > width) {
 			var el = Math.min(str.length(), 3);
-			noTextAdvance(() -> str(1, str.substring(0, width - el) + "...".substring(0, el)));
+			str(1, str.substring(0, width - el) + "...".substring(0, el));
 		}
 		else if(str.length() < width) {
-			noTextAdvance(() -> str(1, string));
-			return noTextAdvance(() -> ch(width - str.length(), ' '));
+			str(1, string);
+			return ch(width - str.length(), ' ');
 		}
-		textLength += width;
 		return this;
 	}
 
 	public final Sequence st() {
-		return noTextAdvance(() -> ch(ESC).ch('\\'));
+		return ch(ESC).ch('\\');
 	}
 
 	public abstract Sequence eraseLine();
@@ -309,7 +299,7 @@ public abstract class Sequence {
 	}
 
 	public final Sequence cr(int repeat) {
-		return noTextAdvance(() -> ch(repeat, CR));
+		return ch(repeat, CR);
 	}
 	public Sequence shade(Shade ch) {
 		return shade(1, ch);
@@ -360,6 +350,7 @@ public abstract class Sequence {
 	}
 
 	public Sequence off() {
+		buffer.style(AttributedStyle.DEFAULT);
 		return this;
 	}
 
@@ -372,6 +363,10 @@ public abstract class Sequence {
 	}
 
 	public Sequence bold(boolean bold) {
+		if(bold) 
+			buffer.style(buffer.style().bold());
+		else 
+			buffer.style(buffer.style().boldOff());
 		return this;
 	}
 
@@ -384,6 +379,10 @@ public abstract class Sequence {
 	}
 
 	public Sequence italic(boolean italic) {
+		if(italic) 
+			buffer.style(buffer.style().italic());
+		else 
+			buffer.style(buffer.style().italicOff());
 		return this;
 	}
 
@@ -396,6 +395,10 @@ public abstract class Sequence {
 	}
 
 	public Sequence underline(boolean underline) {
+		if(underline) 
+			buffer.style(buffer.style().underline());
+		else 
+			buffer.style(buffer.style().underlineOff());
 		return this;
 	}
 
@@ -408,6 +411,10 @@ public abstract class Sequence {
 	}
 
 	public Sequence strikeout(boolean strikeout) {
+		if(strikeout) 
+			buffer.style(buffer.style().crossedOut());
+		else 
+			buffer.style(buffer.style().crossedOutOff());
 		return this;
 	}
 
@@ -419,7 +426,11 @@ public abstract class Sequence {
 		return strikeout(false);
 	}
 
-	public Sequence inverse(boolean inverseinverse) {
+	public Sequence inverse(boolean inverse) {
+		if(inverse) 
+			buffer.style(buffer.style().inverse());
+		else 
+			buffer.style(buffer.style().inverseOff());
 		return this;
 	}
 
@@ -430,8 +441,17 @@ public abstract class Sequence {
 	public final Sequence inverseOff() {
 		return inverse(false);
 	}
+	
+	public Sequence style(AttributedStyle style) {
+		buffer.style(style);
+		return this;
+	}
 
 	public Sequence blink(boolean blink) {
+		if(blink) 
+			buffer.style(buffer.style().blink());
+		else 
+			buffer.style(buffer.style().blinkOff());
 		return this;
 	}
 
@@ -443,19 +463,35 @@ public abstract class Sequence {
 		return blink(false);
 	}
 	
+	public Sequence $(AttributedStyle style) {
+		return style(style);
+	}
+	
 	public Sequence fg(Color color) {
+		var ord = color.ordinal();
+//		if (ord > 7) // TODO: needed?
+//			return csi().num(ord + 82).ch('m');
+//		else
+			buffer.style(buffer.style().foreground(ord));
 		return this;
 	}
 	
 	public Sequence defaultFg() {
+		buffer.style(buffer.style().foregroundDefault());
 		return this;
 	}
 	
 	public Sequence bg(Color color) {
+		var ord = color.ordinal();
+//		if (ord > 7) // TODO: needed?
+//			return csi().num(ord + 92).ch('m');
+//		else
+			buffer.style(buffer.style().background(ord));
 		return this;
 	}
 	
 	public Sequence defaultBg() {
+		buffer.style(buffer.style().backgroundDefault());
 		return this;
 	}
 
@@ -464,7 +500,7 @@ public abstract class Sequence {
 	}
 
 	public final Sequence tab(int repeat) {
-		return noTextAdvance(() -> ch(repeat, TAB));
+		return ch(repeat, TAB);
 	}
 
 	public final Sequence lf() {
@@ -476,7 +512,7 @@ public abstract class Sequence {
 	}
 
 	public final Sequence nl(int repeat) {
-		return noTextAdvance(() -> ch(repeat, NL));
+		return ch(repeat, NL);
 	}
 
 	public final Sequence yesNo(boolean yes) {
@@ -488,7 +524,7 @@ public abstract class Sequence {
 	}
 
 	public final Sequence nul(int repeat) {
-		return noTextAdvance(() -> ch(repeat, NUL));
+		return ch(repeat, NUL);
 	}
 
 	public final Sequence msg(String pattern, Object... args) {
@@ -497,12 +533,13 @@ public abstract class Sequence {
 
 	public final Sequence msg(int repeat, String pattern, Object... args) {
 		if(args.length > 0) {
-			if(textAdvance)
-				textLength += MessageFormat.format(pattern, args).length();
-			pattern = pattern.replace("{", newSeq().boldOn().toString() + "{");
-			pattern = pattern.replace("}", "}" + newSeq().boldOff().toString());
+			var p = Pattern.compile("(\\{[0-9]+(?:,?.*)\\})");
+			var m = p.matcher(pattern);
+			if(m.find()) {
+				pattern = m.replaceAll((r) -> newSeq().boldOn().str(r.group(0)).boldOff().toString());
+			}
 			var fPattern = pattern;
-			noTextAdvance(() -> str(repeat, MessageFormat.format(fPattern, args)));
+			rawStr(repeat, MessageFormat.format(fPattern, args));
 		}
 		else {
 			str(repeat, pattern);
@@ -516,15 +553,13 @@ public abstract class Sequence {
 
 	public final Sequence fmt(int repeat, String pattern, Object... args) {
 		if(args.length > 0) {
-			if(textAdvance)
-				textLength += String.format(pattern, args).length();
 			var p = Pattern.compile("(\\%[0-9\\-\\.]*[a-z]+)");
 			var m = p.matcher(pattern);
 			if(m.find()) {
 				pattern = m.replaceAll((r) -> newSeq().boldOn().str(r.group(0)).boldOff().toString());
 			}
 			var fPattern = pattern;
-			noTextAdvance(() -> str(repeat, String.format(fPattern, args)));
+			rawStr(repeat, String.format(fPattern, args));
 		}
 		else {
 			str(repeat, pattern);
@@ -589,7 +624,7 @@ public abstract class Sequence {
 
 	@Override
 	public String toString() {
-		return buffer == null ? "" : buffer.toString();
+		return buffer == null ? "" : buffer.toAnsi();
 	}
 	
 	public Sequence size(long bytes) {
@@ -634,7 +669,7 @@ public abstract class Sequence {
 
 
 	public boolean emptyText() {
-		return textLength == 0;
+		return textLength() == 0;
 	}
 	
 	public boolean readOnly() {

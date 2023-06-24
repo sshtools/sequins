@@ -15,6 +15,7 @@
  */
 package com.sshtools.sequins;
 
+@Deprecated
 public interface TerminalFactory {
 
 	int getWeight();
