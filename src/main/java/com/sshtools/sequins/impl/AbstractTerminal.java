@@ -24,9 +24,9 @@ import com.sshtools.sequins.Constraint;
 import com.sshtools.sequins.Progress;
 import com.sshtools.sequins.ProgressBuilder;
 import com.sshtools.sequins.Sequence;
-import com.sshtools.sequins.Terminal;
+import com.sshtools.sequins.Sequins;
 
-public abstract class AbstractTerminal implements Terminal {
+public abstract class AbstractTerminal implements Sequins {
 
 	private final List<DumbConsoleProgress> consoleProgress = Collections.synchronizedList(new ArrayList<>());
 

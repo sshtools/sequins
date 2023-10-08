@@ -20,6 +20,8 @@ module com.sshtools.sequins {
 	requires transitive org.jline.terminal;
 	requires transitive org.jline.nativ;
 	requires org.jline.reader;
+	requires com.sshtools.jsixel.lib;
+	requires com.sshtools.jsixel.slim;
 	requires java.xml;
 
 }

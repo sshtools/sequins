@@ -49,7 +49,7 @@ public class Table extends AbstractTwidget {
 	private CellRenderer<Object> cellRenderer;
 	private Map<Class<?>, CellRenderer<?>> renderers =new HashMap<>();
 
-	public Table(Terminal terminal, String... headers) {
+	public Table(Sequins terminal, String... headers) {
 		super(terminal);
 		cellRenderer = CellRenderer.defaultRenderer(terminal);
 		

@@ -18,25 +18,24 @@ package com.sshtools.sequins.impl;
 import java.time.Duration;
 
 import com.sshtools.sequins.Sequence;
-import com.sshtools.sequins.Sequence.Color;
 import com.sshtools.sequins.Sequins;
 
-public class JLineTerminalProgress extends DumbConsoleProgress {
+public class JLineProgress extends DumbConsoleProgress {
 
-	JLineTerminalProgress(Sequins terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText, String name,
+	JLineProgress(Sequins terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText, String name,
 			Object... args) {
 		this(terminal, showSpinner, spinnerStartDelay, percentageText, new Object(), 0, name, args);
 	}
 
-	protected JLineTerminalProgress(Sequins terminal, boolean showSpinner, Duration spinnerStartDelay,  boolean percentageText, Object lock,
+	protected JLineProgress(Sequins terminal, boolean showSpinner, Duration spinnerStartDelay,  boolean percentageText, Object lock,
 			int indent, String name, Object... args) {
 		super(terminal, showSpinner, spinnerStartDelay, percentageText, lock, indent, name, "🕐🕐🕒🕓🕓🕓🕖🕗🕘🕙🕚🕛".codePoints().toArray(), args);
 	}
 
 
 	@Override
-	protected JLineTerminalProgress createNewJob(Object lock, String name, Object... args) {
-		return new JLineTerminalProgress((JLineTerminal) terminal, indeterminate, spinnerStartDelay, percentageText, lock, indent(), name, args);
+	protected JLineProgress createNewJob(Object lock, String name, Object... args) {
+		return new JLineProgress((JLineSequins) terminal, indeterminate, spinnerStartDelay, percentageText, lock, indent(), name, args);
 	}
 
 	@Override

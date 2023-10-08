@@ -15,7 +15,10 @@
  */
 package com.sshtools.sequins;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.channels.WritableByteChannel;
 import java.text.MessageFormat;
 import java.util.regex.Pattern;
 
@@ -188,7 +191,8 @@ public abstract class Sequence {
 		}
 		
 		for(int i = 0 ; i < repeat; i++)
-			buffer.appendAnsi(Character.toString(character));
+			//buffer.appendAnsi(Character.toString(character));
+			buffer.append(character);
 
 		return this;
 	}
@@ -196,9 +200,43 @@ public abstract class Sequence {
 	public final Sequence cp(int codepoint) {
 		return cp(1, codepoint);
 	}
+	
+	public final WritableByteChannel channel() {
+		return new WritableByteChannel() {
+			private boolean open = true;
+
+			@Override
+			public boolean isOpen() {
+				return open ;
+			}
+			
+			@Override
+			public void close() throws IOException {
+				open = false;
+			}
+			
+			@Override
+			public int write(ByteBuffer src) throws IOException {
+				var d = new byte[src.remaining()];
+				src.get(d);
+				buffer.append(new String(d, "UTF-8"));
+				return 0;
+			}
+		};
+	}
 
 	public final Sequence cp(int repeat, int codepoint) {
-		return str(repeat, CharBuffer.wrap(Character.toChars(codepoint)));
+		if(readOnly)
+			throw new IllegalStateException("Read only.");
+		
+		if(textLength() + repeat > maxTextLength) {
+			repeat = maxTextLength - textLength();
+		}
+		for(int i = 0 ; i < repeat; i++)
+			//buffer.appendAnsi(Character.toString(character));
+			buffer.append(Character.toString(codepoint));
+
+		return this;
 	}
 
 	public final Sequence num(int number) {
@@ -241,6 +279,10 @@ public abstract class Sequence {
 
 		
 		return this;
+	}
+	
+	public final Sequence rawStr(Object string) {
+		return rawStr(1, string);
 	}
 
 	public final Sequence rawStr(int repeat, Object string) {

@@ -22,19 +22,19 @@ public interface Twidget {
 	
 	public abstract class AbstractTwidget implements Twidget {
 		
-		private final Terminal terminal;
+		private final Sequins terminal;
 		
-		AbstractTwidget(Terminal terminal) {
+		AbstractTwidget(Sequins terminal) {
 			this.terminal = terminal;
 		}
 
 		@Override
-		public final Terminal getTerminal() {
+		public final Sequins getTerminal() {
 			return terminal;
 		}
 	}
 	
-	Terminal getTerminal();
+	Sequins getTerminal();
 
 	default void draw() throws IOException {
 		var trm = getTerminal();

@@ -26,7 +26,7 @@ public class ProgressBar<N extends Number> extends AbstractTwidget {
 	private Optional<N> value = Optional.empty();
 	private Optional<N> max = Optional.empty();
 
-	public ProgressBar(Terminal terminal) {
+	public ProgressBar(Sequins terminal) {
 		super(terminal);
 	}
 

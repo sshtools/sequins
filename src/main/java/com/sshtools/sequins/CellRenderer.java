@@ -19,15 +19,15 @@ public interface CellRenderer<T> {
 
 	Sequence render(Cell<? extends T> cell, int maxWidth);
 	
-	static  CellRenderer<Object> defaultRenderer(Terminal terminal) {
+	static  CellRenderer<Object> defaultRenderer(Sequins terminal) {
 		return new DefaultCellRenderer(terminal);
 	}
 	
 	static class DefaultCellRenderer implements CellRenderer<Object> {
 
-		private Terminal terminal;
+		private final Sequins terminal;
 
-		public DefaultCellRenderer(Terminal terminal) {
+		public DefaultCellRenderer(Sequins terminal) {
 			this.terminal = terminal;
 		}
 
