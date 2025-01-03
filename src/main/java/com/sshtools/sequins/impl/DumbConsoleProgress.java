@@ -120,9 +120,12 @@ public class DumbConsoleProgress implements Progress {
 	protected final boolean percentageText;
 	protected final int[] spinnerChars;
 
-	DumbConsoleProgress(Sequins terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText,
+	protected final boolean hideCursor;
+	protected final boolean wasCursorVisible;
+
+	DumbConsoleProgress(Sequins terminal, boolean showSpinner, boolean hideCursor, Duration spinnerStartDelay, boolean percentageText,
 			String name, int[] spinnerChars, Object... args) {
-		this(terminal, showSpinner, spinnerStartDelay, percentageText, new Object(), 0, name, spinnerChars, args);
+		this(terminal, showSpinner, hideCursor, spinnerStartDelay, percentageText, new Object(), 0, name, spinnerChars, args);
 	}
 
 	void setOnClose(Runnable onClose) {
@@ -144,10 +147,12 @@ public class DumbConsoleProgress implements Progress {
 		return message;
 	}
 
-	protected DumbConsoleProgress(Sequins terminal, boolean indeterminate, Duration spinnerStartDelay,
+	protected DumbConsoleProgress(Sequins terminal, boolean indeterminate, boolean hideCursor, Duration spinnerStartDelay,
 			boolean percentageText, Object lock, int indent, String name, int[] spinnerChars, Object... args) {
+		this.wasCursorVisible = terminal.cursorVisible();
 		this.terminal = terminal;
 		this.lock = lock;
+		this.hideCursor = hideCursor;
 		this.spinnerChars = spinnerChars;
 		this.indeterminate = indeterminate;
 		this.percentageText = percentageText;
@@ -158,6 +163,8 @@ public class DumbConsoleProgress implements Progress {
 
 		if (message == null)
 			firstMessage = false;
+		
+		this.terminal.cursorVisible(!hideCursor);
 
 		postConstruct();
 	}
@@ -184,6 +191,7 @@ public class DumbConsoleProgress implements Progress {
 				printNewline();
 		}
 		onClose.ifPresent(r -> r.run());
+		terminal.cursorVisible(wasCursorVisible);
 		onClosed();
 	}
 
@@ -319,7 +327,7 @@ public class DumbConsoleProgress implements Progress {
 	}
 
 	protected DumbConsoleProgress createNewJob(Object lock, String name, Object... args) {
-		return new DumbConsoleProgress(terminal, indeterminate, spinnerStartDelay, percentageText, lock, indent, name,
+		return new DumbConsoleProgress(terminal, indeterminate, hideCursor, spinnerStartDelay, percentageText, lock, indent, name,
 				spinnerChars, args);
 	}
 

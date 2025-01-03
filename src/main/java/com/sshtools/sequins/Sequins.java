@@ -83,6 +83,10 @@ public interface Sequins extends Prompter, DrawContext, Closeable {
 
 	ProgressBuilder progressBuilder();
 	
+	void cursorVisible(boolean visible);
+	
+	boolean cursorVisible();
+	
 	default Sequins print(String text) {
 		var wrt = getWriter();
 		wrt.print(text);

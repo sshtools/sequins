@@ -12,6 +12,7 @@ import org.jline.terminal.Cursor;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.jline.utils.InfoCmp.Capability;
+import org.jline.utils.ShutdownHooks;
 
 import com.sshtools.sequins.BitmapBuilder;
 import com.sshtools.sequins.Constraint;
@@ -29,6 +30,7 @@ public class JLineSequins extends AbstractTerminal implements Sequins {
 
 	private final JLineSequins parent;
 	private final Optional<Constraint> region;
+	private final boolean cursorVisibleAtStartup;
 
 	public JLineSequins() throws IOException {
 		this(TerminalBuilder.builder().build());
@@ -39,6 +41,8 @@ public class JLineSequins extends AbstractTerminal implements Sequins {
 		errWriter = new PrintWriter(System.err, true);
 		this.parent = null;
 		region = Optional.empty();
+		cursorVisibleAtStartup = cursorVisible();
+		addShutdownHook();
 	}
 
 	private JLineSequins(Terminal nativeTerm, JLineSequins parent, Constraint region) {
@@ -46,6 +50,8 @@ public class JLineSequins extends AbstractTerminal implements Sequins {
 		errWriter = new PrintWriter(System.err, true);
 		this.parent = parent;
 		this.region = Optional.of(region);
+		cursorVisibleAtStartup = cursorVisible();
+		addShutdownHook();
 	}
 
 	@Override
@@ -259,22 +265,45 @@ public class JLineSequins extends AbstractTerminal implements Sequins {
 		}
 
 		return new JLineSequins(nativeTerm, this,
-				Constraint.bound(constraint().x(), c.getY(), constraint().width(), height));
+				Constraint.bound(constraint().x(), constraint().y(), constraint().width(), height));
+	}
+
+	@Override
+	public void cursorVisible(boolean visible) {
+		if(visible) {
+			nativeTerm.puts(Capability.cursor_visible, true);
+		}
+		else {
+			nativeTerm.puts(Capability.cursor_invisible, true);
+		}
+		nativeTerm.writer().flush();
+	}
+
+	@Override
+	public boolean cursorVisible() {
+		return !terminal().getBooleanCapability(Capability.cursor_invisible);
 	}
 
 	@Override
 	protected DumbConsoleProgress createProgress(ProgressBuilder builder) {
 		if (isDumb()) {
-			return new DumbConsoleProgress(this, builder.indeterminate(), builder.spinnerStartDelay(),
+			return new DumbConsoleProgress(this, builder.indeterminate(), builder.hideCursor(),  builder.spinnerStartDelay(),
 					builder.percentageText(), builder.message(), new int[] { '.' }, builder.args());
 		} else {
-			return new JLineProgress(JLineSequins.this, builder.indeterminate(), builder.spinnerStartDelay(),
+			return new JLineProgress(JLineSequins.this, builder.indeterminate(), builder.hideCursor(), builder.spinnerStartDelay(),
 					builder.percentageText(), builder.message(), new int[] { '.' }, builder.args());
 		}
 	}
 
 	boolean isDumb() {
 		return nativeTerm.getType().equals(Terminal.TYPE_DUMB) || nativeTerm.getType().equals(Terminal.TYPE_DUMB_COLOR);
+	}
+	
+
+	private void addShutdownHook() {
+		ShutdownHooks.add(() -> 
+			cursorVisible(cursorVisibleAtStartup)
+		);
 	}
 
 	private LineReaderBuilder createLineReaderBuilder() {

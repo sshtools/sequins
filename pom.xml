@@ -19,7 +19,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.sshtools</groupId>
 	<artifactId>sequins</artifactId>
-	<version>0.2.1-SNAPSHOT</version>
+	<version>0.2.1</version>
 	<name>Sequins - A library for prettier console output</name>
 	<properties>
 		<maven.compiler.target>17</maven.compiler.target>
@@ -54,7 +54,7 @@
 		<dependency>
 		    <groupId>org.jline</groupId>
 		    <artifactId>jline-reader</artifactId>
-		    <version>3.23.0</version>
+		    <version>3.26.1</version>
 		</dependency>
 		<dependency>
 		    <groupId>com.sshtools</groupId>

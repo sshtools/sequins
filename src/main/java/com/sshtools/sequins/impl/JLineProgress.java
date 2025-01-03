@@ -22,31 +22,31 @@ import com.sshtools.sequins.Sequins;
 
 public class JLineProgress extends DumbConsoleProgress {
 
-	JLineProgress(Sequins terminal, boolean showSpinner, Duration spinnerStartDelay, boolean percentageText, String name,
+	JLineProgress(Sequins terminal, boolean showSpinner, boolean hideCursor, Duration spinnerStartDelay, boolean percentageText, String name,
 			Object... args) {
-		this(terminal, showSpinner, spinnerStartDelay, percentageText, new Object(), 0, name, args);
+		this(terminal, showSpinner, hideCursor, spinnerStartDelay, percentageText, new Object(), 0, name, args);
 	}
 
-	protected JLineProgress(Sequins terminal, boolean showSpinner, Duration spinnerStartDelay,  boolean percentageText, Object lock,
+	protected JLineProgress(Sequins terminal, boolean showSpinner, boolean hideCursor, Duration spinnerStartDelay,  boolean percentageText, Object lock,
 			int indent, String name, Object... args) {
-		super(terminal, showSpinner, spinnerStartDelay, percentageText, lock, indent, name, "🕐🕐🕒🕓🕓🕓🕖🕗🕘🕙🕚🕛".codePoints().toArray(), args);
+		super(terminal, showSpinner, hideCursor, spinnerStartDelay, percentageText, lock, indent, name, "🕐🕐🕒🕓🕓🕓🕖🕗🕘🕙🕚🕛".codePoints().toArray(), args);
 	}
 
 
 	@Override
 	protected JLineProgress createNewJob(Object lock, String name, Object... args) {
-		return new JLineProgress((JLineSequins) terminal, indeterminate, spinnerStartDelay, percentageText, lock, indent(), name, args);
+		return new JLineProgress((JLineSequins) terminal, indeterminate, hideCursor, spinnerStartDelay, percentageText, lock, indent(), name, args);
 	}
 
 	@Override
 	protected void printSpinner(Sequence seq) {
-		seq.csi().ch('s');
+		seq.esc().ch('7');
 		if (spinner == null) {
 			seq.str(" ");
 		} else {
 			seq.msg("{0}", Character.toString(spinnerChars[spinner.index]));
 		}
-		seq.csi().ch('u');
+		seq.esc().ch('8');
 	}
 
 	@Override
